@@ -2206,6 +2206,9 @@ void CWriter::WriteDataInitializers() {
         max = memory->page_limits.is_64 ? (static_cast<uint64_t>(1) << 48)
                                         : 65536;
       }
+      // INTERESTING
+      // Write(printf, "(\"Hello\\n\")");
+      // Write (func_write_memory, mem_size, mem_loc)
       std::string func = GetMemoryAPIString(*memory, "wasm_rt_allocate_memory");
       Write(func, "(",
             ExternalInstancePtr(ModuleFieldType::Memory, memory->name), ", ",
@@ -2220,6 +2223,7 @@ void CWriter::WriteDataInitializers() {
     }
     const Memory* memory =
         module_->memories[module_->GetMemoryIndex(data_segment->memory_var)];
+    // INTERESTING
     Write("LOAD_DATA(",
           ExternalInstanceRef(ModuleFieldType::Memory, memory->name), ", ");
     WriteInitExpr(data_segment->offset);
@@ -2819,6 +2823,7 @@ void CWriter::WriteFree() {
         ModuleInstanceTypeName(), "* instance) ", OpenBrace());
 
   {
+    // Interesting
     Index table_index = 0;
     for (const Table* table : module_->tables) {
       bool is_import = table_index < module_->num_table_imports;
@@ -5038,7 +5043,8 @@ void CWriter::Write(const LoadExpr& expr) {
       WABT_UNREACHABLE;
   }
   // clang-format on
-
+  Write("\\\\ Load comment \n");
+  printf("Load writing\n");
   Memory* memory = module_->memories[module_->GetMemoryIndex(expr.memidx)];
   func = GetMemoryAPIString(*memory, func);
 
@@ -5072,6 +5078,9 @@ void CWriter::Write(const StoreExpr& expr) {
       WABT_UNREACHABLE;
   }
   // clang-format on
+  // Write(printf, "\"Store writing\\n\"");
+  Write("\\\\ Store comment \n");
+  printf("Store writing\n");
 
   Memory* memory = module_->memories[module_->GetMemoryIndex(expr.memidx)];
   func = GetMemoryAPIString(*memory, func);

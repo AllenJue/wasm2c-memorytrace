@@ -116,6 +116,7 @@ static void os_print_last_error(const char* msg) {
 static void* os_mmap(size_t size) {
   int map_prot = PROT_NONE;
   int map_flags = MAP_ANONYMOUS | MAP_PRIVATE;
+  printf("mmap\n");
   uint8_t* addr = mmap(NULL, size, map_prot, map_flags, -1, 0);
   if (addr == MAP_FAILED)
     return NULL;
@@ -123,6 +124,7 @@ static void* os_mmap(size_t size) {
 }
 
 static int os_munmap(void* addr, size_t size) {
+  printf("munmap\n");
   return munmap(addr, size);
 }
 

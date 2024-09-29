@@ -74,6 +74,9 @@ static void ParseOptions(int argc, char** argv) {
     s_verbose++;
     s_log_stream = FileStream::CreateStderr();
   });
+
+  // add option for print memory traces
+  // TODO
   parser.AddOption(
       'o', "output", "FILENAME",
       "Output file for the generated C source file, by default use stdout",
@@ -189,6 +192,7 @@ Result Wasm2cMain(Errors& errors) {
 }
 
 int ProgramMain(int argc, char** argv) {
+  printf("Program main\n");
   Result result;
 
   InitStdio();

@@ -53,7 +53,6 @@ int main(int argc, char** argv) {
     /* Move to next arg. Do this first, so the program name is skipped. */
     argc--;
     argv++;
-
     host.input = argv[0];
     w2c_rot13_rot13(&rot13);
   }

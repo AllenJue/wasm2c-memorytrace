@@ -334,6 +334,8 @@ R"w2c_template(  do {                                   \
 )w2c_template"
 R"w2c_template(    RANGE_CHECK((&m), o, s);             \
 )w2c_template"
+R"w2c_template(    printf("LOAD_DATA\n");               \
+)w2c_template"
 R"w2c_template(    load_data(MEM_ADDR(&m, o, s), i, s); \
 )w2c_template"
 R"w2c_template(  } while (0)
