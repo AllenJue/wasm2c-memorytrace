@@ -33,6 +33,8 @@
 #include "wabt/stream.h"
 #include "wabt/string-util.h"
 
+#include "wabt/mem-trace.h"
+
 #define INDENT_SIZE 2
 
 #define UNIMPLEMENTED(x) printf("unimplemented: %s\n", (x)), abort()
@@ -5042,7 +5044,9 @@ void CWriter::Write(const LoadExpr& expr) {
     default:
       WABT_UNREACHABLE;
   }
+
   // clang-format on
+  // printf("%d\n", s_trace);
   Write("\\\\ Load comment \n");
   printf("Load writing\n");
   Memory* memory = module_->memories[module_->GetMemoryIndex(expr.memidx)];

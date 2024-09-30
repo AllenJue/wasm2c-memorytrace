@@ -317,6 +317,7 @@ set(WABT_LIBRARY_CC
   src/shared-validator.cc
   src/stream.cc
   src/token.cc
+  src/mem-trace.cc
   src/tracing.cc
   src/type-checker.cc
   src/utf8.cc
@@ -362,6 +363,7 @@ set(WABT_LIBRARY_H
   include/wabt/lexer-source-line-finder.h
   include/wabt/lexer-source.h
   include/wabt/literal.h
+  include/wabt/mem-trace.h
   include/wabt/opcode-code-table.h
   include/wabt/opcode.h
   include/wabt/option-parser.h

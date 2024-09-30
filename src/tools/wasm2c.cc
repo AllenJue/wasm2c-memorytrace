@@ -35,6 +35,8 @@
 
 #include "wabt/c-writer.h"
 
+#include "wabt/mem-trace.h"
+
 using namespace wabt;
 
 static int s_verbose;
@@ -44,6 +46,8 @@ static unsigned int s_num_outputs = 1;
 static WriteCOptions s_write_c_options;
 static bool s_read_debug_names = true;
 static std::unique_ptr<FileStream> s_log_stream;
+
+// bool s_trace = false;
 
 static const char s_description[] =
     R"(  Read a file in the WebAssembly binary format, and convert it to
@@ -68,6 +72,7 @@ static bool IsFeatureSupported(const std::string& feature) {
 };
 
 static void ParseOptions(int argc, char** argv) {
+  printf("Parsing options\n");
   OptionParser parser("wasm2c", s_description);
 
   parser.AddOption('v', "verbose", "Use multiple times for more info", []() {
@@ -77,6 +82,8 @@ static void ParseOptions(int argc, char** argv) {
 
   // add option for print memory traces
   // TODO
+  parser.AddOption('t',"trace", "Trace load and stores",
+                   []() { s_trace = true; });
   parser.AddOption(
       'o', "output", "FILENAME",
       "Output file for the generated C source file, by default use stdout",
@@ -103,6 +110,8 @@ static void ParseOptions(int argc, char** argv) {
                        ConvertBackslashToSlash(&s_infile);
                      });
   parser.Parse(argc, argv);
+
+  printf("s_trace in parse argument: %d\n", s_trace);
 
   bool any_non_supported_feature = false;
 #define WABT_FEATURE(variable, flag, default_, help)                   \
