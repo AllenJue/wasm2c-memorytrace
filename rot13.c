@@ -156,9 +156,12 @@ static inline bool func_types_eq(const wasm_rt_func_type_t a,
 #endif
 
 #if WASM_RT_MEMCHECK_GUARD_PAGES
-#define MEMCHECK(mem, a, t) WASM_RT_CHECK_BASE(mem);
+#define MEMCHECK(mem, a, t) \
+  WASM_RT_CHECK_BASE(mem); \
+  printf("%s\n", "Memcheck guard");
 #else
 #define MEMCHECK(mem, a, t) \
+  printf("%s\n", "Memcheck bounds"); \
   WASM_RT_CHECK_BASE(mem);  \
   RANGE_CHECK(mem, a, sizeof(t))
 #endif

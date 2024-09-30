@@ -2208,8 +2208,6 @@ void CWriter::WriteDataInitializers() {
         max = memory->page_limits.is_64 ? (static_cast<uint64_t>(1) << 48)
                                         : 65536;
       }
-      // INTERESTING
-      // Write(printf, "(\"Hello\\n\")");
       // Write (func_write_memory, mem_size, mem_loc)
       std::string func = GetMemoryAPIString(*memory, "wasm_rt_allocate_memory");
       Write(func, "(",
@@ -5046,9 +5044,17 @@ void CWriter::Write(const LoadExpr& expr) {
   }
 
   // clang-format on
-  // printf("%d\n", s_trace);
-  Write("\\\\ Load comment \n");
-  printf("Load writing\n");
+  // printf("s_trace in load %d\n", s_trace);
+  // Instrumentation code to print memory addresses
+  if (s_trace) {
+    // Write("// Load comment \n");
+    // Write("\t\tprintf(\"Memory Address in Load: %p\\n\", instance->w2c_host_mem");
+    Write(");", Newline());
+    Write("\t\tprintf(\"Memory Access in Load: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", StackVar(0), ")");
+    Write(");", Newline());
+  }
+
+  // printf("Load writing\n");
   Memory* memory = module_->memories[module_->GetMemoryIndex(expr.memidx)];
   func = GetMemoryAPIString(*memory, func);
 
@@ -5056,6 +5062,7 @@ void CWriter::Write(const LoadExpr& expr) {
   Write(StackVar(0, result_type), " = ", func, "(",
         ExternalInstancePtr(ModuleFieldType::Memory, memory->name), ", (u64)(",
         StackVar(0), ")");
+  printf("Expr offset: %lu\n", expr.offset);
   if (expr.offset != 0)
     Write(" + ", expr.offset, "u");
   Write(");", Newline());
@@ -5082,9 +5089,13 @@ void CWriter::Write(const StoreExpr& expr) {
       WABT_UNREACHABLE;
   }
   // clang-format on
-  // Write(printf, "\"Store writing\\n\"");
-  Write("\\\\ Store comment \n");
-  printf("Store writing\n");
+  if (s_trace) {
+    // Write("// Store comment \n");
+    // Write("\t\tprintf(\"Memory Address in Store: %p\\n\", instance->w2c_host_mem");
+    Write(");", Newline());
+    Write("\t\tprintf(\"Memory Access in Store: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", StackVar(1), ")");
+    Write(");", Newline());
+  }
 
   Memory* memory = module_->memories[module_->GetMemoryIndex(expr.memidx)];
   func = GetMemoryAPIString(*memory, func);
