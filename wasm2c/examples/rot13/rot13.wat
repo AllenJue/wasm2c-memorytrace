@@ -29,7 +29,7 @@
   (local $i i32)
 
   ;; Ask host to fill memory [0, 1024) with data.
-  (call $fill_buf (i32.const 0) (i32.const 1024))
+  (call $fill_buf (i32.const 0) (i32.const 35000))
 
   ;; The host returns the size filled.
   (local.set $size)

@@ -400,6 +400,8 @@ class CWriter {
   void WriteDataInstances();
   void WriteElemInstances();
   void WriteGlobalInitializers();
+  void WriteFileInitializers();
+  void WriteFileClose();
   void WriteDataInitializerDecls();
   void WriteDataInitializers();
   void WriteElemInitializerDecls();
@@ -2131,6 +2133,25 @@ void CWriter::WriteGlobalInitializers() {
     ++global_index;
   }
   Write(CloseBrace(), Newline());
+}
+
+void CWriter::WriteFileInitializers() {
+  if(!s_trace) {
+    return;
+  }
+  Write("static FILE* log_file = NULL;");
+  // TODO Write a file open at the top. 
+}
+
+void CWriter::WriteFileClose() {
+  if(!s_trace) {
+    return;
+  }
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_close() ", 
+    OpenBrace(), "fclose(log_file);\n", CloseBrace(), Newline());
+
+  // TODO Write a file close at the bottom
+
 }
 
 static inline bool is_droppable(const DataSegment* data_segment) {
@@ -5049,8 +5070,8 @@ void CWriter::Write(const LoadExpr& expr) {
   if (s_trace) {
     // Write("// Load comment \n");
     // Write("\t\tprintf(\"Memory Address in Load: %p\\n\", instance->w2c_host_mem");
-    Write(");", Newline());
-    Write("\t\tprintf(\"Memory Access in Load: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", StackVar(0), ")");
+    // Write(");", Newline());
+    Write("printf(\"L: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", StackVar(0), ")");
     Write(");", Newline());
   }
 
@@ -5092,8 +5113,8 @@ void CWriter::Write(const StoreExpr& expr) {
   if (s_trace) {
     // Write("// Store comment \n");
     // Write("\t\tprintf(\"Memory Address in Store: %p\\n\", instance->w2c_host_mem");
-    Write(");", Newline());
-    Write("\t\tprintf(\"Memory Access in Store: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", StackVar(1), ")");
+    // Write(");", Newline());
+    Write("printf(\"S: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", StackVar(1), ")");
     Write(");", Newline());
   }
 
@@ -5883,6 +5904,7 @@ void CWriter::WriteCSource() {
   WriteFuncTypes();
   WriteTags();
   WriteGlobalInitializers();
+  WriteFileInitializers();
   WriteDataInitializers();
   WriteElemInitializers();
   WriteExports(CWriterPhase::Definitions);
@@ -5893,6 +5915,7 @@ void CWriter::WriteCSource() {
   WriteInitInstanceImport();
   WriteImportProperties(CWriterPhase::Definitions);
   WriteInit();
+  WriteFileClose();
   WriteFree();
   WriteGetFuncType();
 
