@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
   // Construct an instance of the `rot13` module, which imports from the host.
   w2c_rot13 rot13;
   wasm2c_rot13_instantiate(&rot13, &host);
-
+  wasm2c_rot13_file_open();
   /* Call `rot13` on each argument. */
   while (argc > 1) {
     /* Move to next arg. Do this first, so the program name is skipped. */
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
 
   /* Free the rot13 module. */
   wasm2c_rot13_free(&rot13);
-
+  wasm2c_rot13_file_close();
   /* Free the Wasm runtime state. */
   wasm_rt_free();
 

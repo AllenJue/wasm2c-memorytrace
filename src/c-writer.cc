@@ -400,6 +400,7 @@ class CWriter {
   void WriteDataInstances();
   void WriteElemInstances();
   void WriteGlobalInitializers();
+  void WriteFileDecl();
   void WriteFileInitializers();
   void WriteFileClose();
   void WriteDataInitializerDecls();
@@ -2135,11 +2136,11 @@ void CWriter::WriteGlobalInitializers() {
   Write(CloseBrace(), Newline());
 }
 
-void CWriter::WriteFileInitializers() {
+void CWriter::WriteFileDecl() {
   if(!s_trace) {
     return;
   }
-  Write("static FILE* log_file = NULL;");
+  Write("static FILE* log_file = NULL;", Newline());
   // TODO Write a file open at the top. 
 }
 
@@ -2148,9 +2149,20 @@ void CWriter::WriteFileClose() {
     return;
   }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_close() ", 
-    OpenBrace(), "fclose(log_file);\n", CloseBrace(), Newline());
+    OpenBrace(), "fclose(log_file);", Newline(), CloseBrace(), Newline());
 
   // TODO Write a file close at the bottom
+
+}
+
+void CWriter::WriteFileInitializers() {
+  if(!s_trace) {
+    return;
+  }
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_open() ", 
+    OpenBrace(), 
+      "log_file = fopen(\"", module_prefix_, "_log.txt\", \"a\");\n", 
+    CloseBrace(), Newline());
 
 }
 
@@ -5904,6 +5916,7 @@ void CWriter::WriteCSource() {
   WriteFuncTypes();
   WriteTags();
   WriteGlobalInitializers();
+  WriteFileDecl();
   WriteFileInitializers();
   WriteDataInitializers();
   WriteElemInitializers();
