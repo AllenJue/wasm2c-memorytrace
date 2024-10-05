@@ -401,7 +401,9 @@ class CWriter {
   void WriteElemInstances();
   void WriteGlobalInitializers();
   void WriteFileDecl();
-  void WriteFileInitializers();
+  void WriteFileOpenDecls();
+  void WriteFileOpen();
+  void WriteFileCloseDecls();
   void WriteFileClose();
   void WriteDataInitializerDecls();
   void WriteDataInitializers();
@@ -1334,6 +1336,17 @@ void CWriter::Write(const Const& const_) {
   }
 }
 
+void CWriter::WriteFileOpenDecls() {
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_open();");
+  Write(Newline());
+}
+
+void CWriter::WriteFileCloseDecls() {
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_close();");
+  Write(Newline());
+}
+
+
 void CWriter::WriteInitDecl() {
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_instantiate(",
         ModuleInstanceTypeName(), "*");
@@ -2155,7 +2168,7 @@ void CWriter::WriteFileClose() {
 
 }
 
-void CWriter::WriteFileInitializers() {
+void CWriter::WriteFileOpen() {
   if(!s_trace) {
     return;
   }
@@ -5085,6 +5098,9 @@ void CWriter::Write(const LoadExpr& expr) {
     // Write(");", Newline());
     Write("printf(\"L: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", StackVar(0), ")");
     Write(");", Newline());
+    Write("fprintf(log_file, \"L: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", 
+      StackVar(0), ")");
+    Write(");", Newline());
   }
 
   // printf("Load writing\n");
@@ -5127,6 +5143,9 @@ void CWriter::Write(const StoreExpr& expr) {
     // Write("\t\tprintf(\"Memory Address in Store: %p\\n\", instance->w2c_host_mem");
     // Write(");", Newline());
     Write("printf(\"S: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", StackVar(1), ")");
+    Write(");", Newline());
+    Write("fprintf(log_file, \"S: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", 
+      StackVar(1), ")");
     Write(");", Newline());
   }
 
@@ -5880,6 +5899,8 @@ void CWriter::WriteCHeader() {
   WriteModuleInstance();
   WriteInitDecl();
   WriteFreeDecl();
+  WriteFileOpenDecls();
+  WriteFileCloseDecls();
   WriteGetFuncTypeDecl();
   WriteMultivalueResultTypes();
   WriteImports();
@@ -5917,7 +5938,7 @@ void CWriter::WriteCSource() {
   WriteTags();
   WriteGlobalInitializers();
   WriteFileDecl();
-  WriteFileInitializers();
+  WriteFileOpen();
   WriteDataInitializers();
   WriteElemInitializers();
   WriteExports(CWriterPhase::Definitions);
