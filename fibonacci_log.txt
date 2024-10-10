@@ -1,0 +1,60 @@
+L: 0x7ffd7e55fc98
+Load Value: 8
+S: 0x7ffd7e55fc98
+Store value: 1
+L: 0x7ffd7e55fc9c
+Load Value: 12
+L: 0x7ffd7e55fc98
+Load Value: 8
+S: 0x7ffd7e55fc9c
+Store value: 2
+L: 0x7ffd7e55fca0
+Load Value: 16
+L: 0x7ffd7e55fc9c
+Load Value: 12
+L: 0x7ffd7e55fc98
+Load Value: 8
+S: 0x7ffd7e55fca0
+Store value: 3
+L: 0x7ffd7e55fca4
+Load Value: 20
+L: 0x7ffd7e55fca0
+Load Value: 16
+L: 0x7ffd7e55fc9c
+Load Value: 12
+S: 0x7ffd7e55fca4
+Store value: 5
+L: 0x7ffd7e55fca8
+Load Value: 24
+L: 0x7ffd7e55fca4
+Load Value: 20
+L: 0x7ffd7e55fca0
+Load Value: 16
+S: 0x7ffd7e55fca8
+Store value: 8
+L: 0x7ffd7e55fcac
+Load Value: 28
+L: 0x7ffd7e55fca8
+Load Value: 24
+L: 0x7ffd7e55fca4
+Load Value: 20
+S: 0x7ffd7e55fcac
+Store value: 13
+L: 0x7ffd7e55fcb0
+Load Value: 32
+L: 0x7ffd7e55fcac
+Load Value: 28
+L: 0x7ffd7e55fca8
+Load Value: 24
+S: 0x7ffd7e55fcb0
+Store value: 21
+L: 0x7ffd7e55fcb4
+Load Value: 36
+L: 0x7ffd7e55fcb0
+Load Value: 32
+L: 0x7ffd7e55fcac
+Load Value: 28
+S: 0x7ffd7e55fcb4
+Store value: 34
+L: 0x7ffd7e55fcb4
+Load Value: 36
