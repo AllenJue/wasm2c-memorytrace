@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
 #if defined(__MINGW32__)
 #include <malloc.h>
 #elif defined(_MSC_VER)

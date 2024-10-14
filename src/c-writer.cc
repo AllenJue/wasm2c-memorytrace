@@ -400,11 +400,16 @@ class CWriter {
   void WriteDataInstances();
   void WriteElemInstances();
   void WriteGlobalInitializers();
+  // create file declarations
   void WriteFileDecl();
   void WriteFileOpenDecls();
   void WriteFileOpen();
   void WriteFileCloseDecls();
   void WriteFileClose();
+  // create memory struct declarations
+  void WriteMemoryInfoDecl();
+  void WriteMemoryInfoFuncsDecls();
+  void WriteMemoryInfoFuncs();
   void WriteDataInitializerDecls();
   void WriteDataInitializers();
   void WriteElemInitializerDecls();
@@ -2154,7 +2159,7 @@ void CWriter::WriteFileDecl() {
     return;
   }
   Write("static FILE* log_file = NULL;", Newline());
-  // TODO Write a file open at the top. 
+  Write(Newline());
 }
 
 void CWriter::WriteFileClose() {
@@ -2163,9 +2168,6 @@ void CWriter::WriteFileClose() {
   }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_close() ", 
     OpenBrace(), "fclose(log_file);", Newline(), CloseBrace(), Newline());
-
-  // TODO Write a file close at the bottom
-
 }
 
 void CWriter::WriteFileOpen() {
@@ -2174,7 +2176,7 @@ void CWriter::WriteFileOpen() {
   }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_open() ", 
     OpenBrace(), 
-      "log_file = fopen(\"", module_prefix_, "_log.txt\", \"a\");\n", 
+      "log_file = fopen(\"", module_prefix_, "_log.txt\", \"w\");\n", 
     CloseBrace(), Newline());
 
 }
@@ -2182,6 +2184,57 @@ void CWriter::WriteFileOpen() {
 static inline bool is_droppable(const DataSegment* data_segment) {
   return (data_segment->kind == SegmentKind::Passive) &&
          (!data_segment->data.empty());
+}
+
+
+void CWriter::WriteMemoryInfoDecl() {
+  if(!s_trace) {
+    return;
+  }
+  Write("// Memory Info Decl", Newline());
+  Write("#define MAX_MAP_SIZE 100", Newline());
+  Write("struct MemoryInfo map[MAX_MAP_SIZE];", Newline());
+  Write("int map_size = 0;", Newline());
+}
+
+void CWriter::WriteMemoryInfoFuncs() {
+  if(!s_trace) {
+    return;
+  }
+  Write("// Memory Info Func", Newline());
+  Write("void ", kAdminSymbolPrefix, module_prefix_, 
+    "_map_insert(void *key, struct MemoryInfo *memInfo)", OpenBrace());
+  Write("// TODO", Newline());
+  Write(CloseBrace(), Newline()); 
+  Write(Newline());
+
+  Write("struct MemoryInfo ", kAdminSymbolPrefix, module_prefix_, 
+    "_map_find(void *key)", OpenBrace());
+  Write("// TODO", Newline());
+  Write(CloseBrace(), Newline());
+  Write(Newline());
+}
+
+void CWriter::WriteMemoryInfoFuncsDecls() {
+  if(!s_trace) {
+    return;
+  }
+  // Write the MemoryInfo Struct
+  Write("struct MemoryInfo", OpenBrace());
+  Write("void *key;", Newline());
+  Write("bool dirty;", Newline());
+  Write("int clean_rechecks;", Newline());
+  Write(CloseBrace(), ";", Newline());
+
+  Write("// Memory Info Func Decls", Newline());
+  Write("void ", kAdminSymbolPrefix, module_prefix_, 
+    "_map_insert(void *key, struct MemoryInfo *memInfo);");
+  Write(Newline());
+  Write("struct MemoryInfo ", kAdminSymbolPrefix, module_prefix_, "_map_find(void *key);");
+  Write(Newline());
+  Write(Newline());
+  // Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_close() ", 
+  //   OpenBrace(), "fclose(log_file);", Newline(), CloseBrace(), Newline());
 }
 
 static inline bool is_droppable(const ElemSegment* elem_segment) {
@@ -5899,8 +5952,10 @@ void CWriter::WriteCHeader() {
   WriteModuleInstance();
   WriteInitDecl();
   WriteFreeDecl();
+  // Logging stuff here
   WriteFileOpenDecls();
   WriteFileCloseDecls();
+  WriteMemoryInfoFuncsDecls();
   WriteGetFuncTypeDecl();
   WriteMultivalueResultTypes();
   WriteImports();
@@ -5939,6 +5994,8 @@ void CWriter::WriteCSource() {
   WriteGlobalInitializers();
   WriteFileDecl();
   WriteFileOpen();
+  WriteMemoryInfoDecl();
+  WriteMemoryInfoFuncs();
   WriteDataInitializers();
   WriteElemInitializers();
   WriteExports(CWriterPhase::Definitions);
