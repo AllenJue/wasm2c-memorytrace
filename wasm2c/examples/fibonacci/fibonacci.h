@@ -42,9 +42,9 @@ typedef struct MemoryInfo{
   bool dirty;
   int clean_rechecks;
 }MemoryInfo;
-// Memory Info Func Decls
+void *ptr;MemoryInfo *existing;// Memory Info Func Decls
 void wasm2c_fibonacci_map_insert(void *key, MemoryInfo *memInfo);
-MemoryInfo *wasm2c_fibonacci_map_find(void *key);
+MemoryInfo *wasm2c_fibonacci_map_find(void *key);//FIXXXXX voidwasm2c_fibonacci_print_map();
 
 wasm_rt_func_type_t wasm2c_fibonacci_get_func_type(uint32_t param_count, uint32_t result_count, ...);
 

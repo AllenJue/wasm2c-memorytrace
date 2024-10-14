@@ -2205,14 +2205,16 @@ void CWriter::WriteMemoryInfoFuncs() {
   Write("void ", kAdminSymbolPrefix, module_prefix_, 
     "_map_insert(void *key, MemoryInfo *memInfo)", OpenBrace());
   Write("// TODO", Newline());
-  Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_,
-    "_map_find(key);", Newline());
-  Write("if (!existing) ", OpenBrace());
-  Write("map[map_size].key = key;", Newline());
-  Write("map[map_size].dirty = false;", Newline());
-  Write("map[map_size].clean_rechecks = 0;", Newline());
-  Write("map_size++;", Newline());
+  // check size of map allocations
+  Write("if(map_size >= MAX_MAP_SIZE) ", OpenBrace());
+  Write("printf(\"Maximum size allocations reached\\n\");", Newline());
+  Write("return;", Newline());
   Write(CloseBrace(), Newline());
+  // Still have space, so fill out the fields per the *memInfo
+  Write("map[map_size].key = memInfo->key;", Newline());
+  Write("map[map_size].dirty = memInfo->dirty;", Newline());
+  Write("map[map_size].clean_rechecks = memInfo->clean_rechecks;", Newline());
+  Write("map_size++;", Newline());
   Write(CloseBrace(), Newline()); 
   Write(Newline());
 
@@ -2228,6 +2230,16 @@ void CWriter::WriteMemoryInfoFuncs() {
   Write("return NULL;", Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
+
+  // write method for printing out all MemoryInfo map
+  Write("void", kAdminSymbolPrefix, module_prefix_, "_print_map()", OpenBrace());
+  Write("for(int i = 0; i < map_size; i++) ", OpenBrace());
+  Write("printf(\"ptr: %p, rechecked: %d times \\n\", map[i].key, map[i].clean_rechecks);",
+    Newline());
+  Write(CloseBrace(), Newline());
+  Write(CloseBrace(), Newline());
+  Write(Newline());
+
 }
 
 void CWriter::WriteMemoryInfoFuncsDecls() {
@@ -2241,11 +2253,14 @@ void CWriter::WriteMemoryInfoFuncsDecls() {
   Write("int clean_rechecks;", Newline());
   Write(CloseBrace(), "MemoryInfo;", Newline());
 
+  Write("void *ptr;"); // this is a shared ptr variable used as a key later
+  Write("MemoryInfo *existing;"); // this is a shared existing variable used as a MemoryInfo later
   Write("// Memory Info Func Decls", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, 
     "_map_insert(void *key, MemoryInfo *memInfo);");
   Write(Newline());
   Write("MemoryInfo *", kAdminSymbolPrefix, module_prefix_, "_map_find(void *key);");
+  Write("void", kAdminSymbolPrefix, module_prefix_, "_print_map();");
   Write(Newline());
   Write(Newline());
   // Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_close() ", 
@@ -5164,11 +5179,34 @@ void CWriter::Write(const LoadExpr& expr) {
     // Write("// Load comment \n");
     // Write("\t\tprintf(\"Memory Address in Load: %p\\n\", instance->w2c_host_mem");
     // Write(");", Newline());
-    Write("printf(\"L: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", StackVar(0), ")");
+    Write("ptr = (void*)((u64)instance->w2c_host_mem + (u64)", StackVar(0), ");", Newline());
+    Write("printf(\"L: %p\\n\",", " ptr");
     Write(");", Newline());
-    Write("fprintf(log_file, \"L: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", 
-      StackVar(0), ")");
+    Write("fprintf(log_file, \"L: %p\\n\",", " ptr");
     Write(");", Newline());
+
+    // TODO
+    // If the thing already exists, if it was already clean, increment rechecks
+    // Finally, set it to clean
+    Write("existing = ", kAdminSymbolPrefix, module_prefix_,
+      "_map_find(ptr);", Newline());
+    Write("if (existing) ", OpenBrace());
+    Write("printf(\"Existing!\\n\");", Newline());
+    Write("if (!existing->dirty ) ", OpenBrace());
+    Write("existing->clean_rechecks++;", Newline());
+    Write(CloseBrace(), Newline());
+    Write("existing->dirty = false;", Newline());
+    Write(CloseBrace(), " else ", OpenBrace());
+    Write("printf(\"Not Existing!\\n\");", Newline());
+    // otherwise, if it does not exist, we must make update the values in the map
+    Write("MemoryInfo temp;", Newline());
+    Write("temp.key = ptr;", Newline());
+    Write("temp.dirty = false;", Newline());
+    Write("temp.clean_rechecks = 0;", Newline());
+    Write(kAdminSymbolPrefix, module_prefix_, 
+    "_map_insert(ptr, &temp);", Newline());
+    Write(CloseBrace(), Newline());
+    
   }
 
   // printf("Load writing\n");
@@ -5208,15 +5246,29 @@ void CWriter::Write(const StoreExpr& expr) {
   // clang-format on
   if (s_trace) {
     // Write("// Store comment \n");
-    // Write("\t\tprintf(\"Memory Address in Store: %p\\n\", instance->w2c_host_mem");
-    // Write(");", Newline());
-    Write("printf(\"S: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", StackVar(1), ")");
+    Write("ptr = ", "(void*)((u64)instance->w2c_host_mem + (u64)", StackVar(1));
     Write(");", Newline());
-    Write("fprintf(log_file, \"S: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", 
-      StackVar(1), ")");
+    Write("printf(\"S: %p\\n\", ptr);" , Newline());
+    Write("fprintf(log_file, \"S: %p\\n\", ptr);", Newline());    
 
-    
-    Write(");", Newline());
+    // TODO
+    // if existing, mark as dirty
+    Write("existing = ", kAdminSymbolPrefix, module_prefix_,
+      "_map_find(ptr);", Newline());
+    Write("if (existing) ", OpenBrace());
+    Write("printf(\"Existing!\\n\");", Newline());
+    Write("existing->dirty = true;", Newline());
+    Write(CloseBrace(), " else ", OpenBrace());
+    Write("printf(\"Not Existing!\\n\");", Newline());
+    // otherwise, new store, just mark as clean and store it
+    Write("MemoryInfo temp;", Newline());
+    Write("temp.key = ptr;", Newline());
+    Write("temp.dirty = false;", Newline());
+    Write("temp.clean_rechecks = 0;", Newline());
+    Write(kAdminSymbolPrefix, module_prefix_, 
+    "_map_insert(ptr, &temp);", Newline());
+    Write(CloseBrace(), Newline());
+
   }
 
   Memory* memory = module_->memories[module_->GetMemoryIndex(expr.memidx)];

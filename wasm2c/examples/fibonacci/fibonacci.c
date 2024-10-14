@@ -745,13 +745,14 @@ int map_size = 0;
 // Memory Info Func
 void wasm2c_fibonacci_map_insert(void *key, MemoryInfo *memInfo){
   // TODO
-  MemoryInfo *existing = wasm2c_fibonacci_map_find(key);
-  if (!existing) {
-    map[map_size].key = key;
-    map[map_size].dirty = false;
-    map[map_size].clean_rechecks = 0;
-    map_size++;
+  if(map_size >= MAX_MAP_SIZE) {
+    printf("Maximum size allocations reached\n");
+    return;
   }
+  map[map_size].key = memInfo->key;
+  map[map_size].dirty = memInfo->dirty;
+  map[map_size].clean_rechecks = memInfo->clean_rechecks;
+  map_size++;
 }
 
 MemoryInfo *wasm2c_fibonacci_map_find(void *key){
@@ -762,6 +763,12 @@ MemoryInfo *wasm2c_fibonacci_map_find(void *key){
     }
   }
   return NULL;
+}
+
+voidwasm2c_fibonacci_print_map(){
+  for(int i = 0; i < map_size; i++) {
+    printf("ptr: %p, rechecked: %d times \n", map[i].key, map[i].clean_rechecks);
+  }
 }
 
 static void init_memories(w2c_fibonacci* instance) {
@@ -874,8 +881,24 @@ u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
   var_i0 = var_p0;
   var_i1 = 4u;
   var_i0 *= var_i1;
-  printf("L: %p\n", (void*)((u64)instance->w2c_host_mem + (u64)var_i0));
-  fprintf(log_file, "L: %p\n", (void*)((u64)instance->w2c_host_mem + (u64)var_i0));
+  ptr = (void*)((u64)instance->w2c_host_mem + (u64)var_i0);
+  printf("L: %p\n", ptr);
+  fprintf(log_file, "L: %p\n", ptr);
+  existing = wasm2c_fibonacci_map_find(ptr);
+  if (existing) {
+    printf("Existing!\n");
+    if (!existing->dirty ) {
+      existing->clean_rechecks++;
+    }
+    existing->dirty = false;
+  } else {
+    printf("Not Existing!\n");
+    MemoryInfo temp;
+    temp.key = ptr;
+    temp.dirty = false;
+    temp.clean_rechecks = 0;
+    wasm2c_fibonacci_map_insert(ptr, &temp);
+  }
   var_i0 = i32_load(instance->w2c_host_mem, (u64)(var_i0));
   var_l1 = var_i0;
   var_i0 = var_l1;
@@ -899,8 +922,21 @@ u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
   var_i1 = 4u;
   var_i0 *= var_i1;
   var_i1 = var_l1;
-  printf("S: %p\n", (void*)((u64)instance->w2c_host_mem + (u64)var_i0));
-  fprintf(log_file, "S: %p\n", (void*)((u64)instance->w2c_host_mem + (u64)var_i0));
+  ptr = (void*)((u64)instance->w2c_host_mem + (u64)var_i0);
+  printf("S: %p\n", ptr);
+  fprintf(log_file, "S: %p\n", ptr);
+  existing = wasm2c_fibonacci_map_find(ptr);
+  if (existing) {
+    printf("Existing!\n");
+    existing->dirty = true;
+  } else {
+    printf("Not Existing!\n");
+    MemoryInfo temp;
+    temp.key = ptr;
+    temp.dirty = false;
+    temp.clean_rechecks = 0;
+    wasm2c_fibonacci_map_insert(ptr, &temp);
+  }
   i32_store(instance->w2c_host_mem, (u64)(var_i0), var_i1);
   var_i0 = var_l1;
   goto var_Bfunc;

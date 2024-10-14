@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     printf("%d\n", input);
     w2c_fibonacci_fibonacci_loop(&fibonnaci, input);
   }
-
+  voidwasm2c_fibonacci_print_map();
   wasm2c_fibonacci_free(&fibonnaci);
   wasm2c_fibonacci_file_close();
 
