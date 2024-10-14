@@ -739,16 +739,29 @@ void wasm2c_fibonacci_file_open() {
   log_file = fopen("fibonacci_log.txt", "w");
 }
 // Memory Info Decl
-#define MAX_MEMORY_ALLOCATIONS 100
-struct MemoryInfo map[MAX_MAP_SIZE];
+#define MAX_MAP_SIZE 100
+MemoryInfo map[MAX_MAP_SIZE];
 int map_size = 0;
 // Memory Info Func
-void wasm2c_fibonacci_map_insert(void *key, struct MemoryInfo *memInfo){
+void wasm2c_fibonacci_map_insert(void *key, MemoryInfo *memInfo){
   // TODO
+  MemoryInfo *existing = wasm2c_fibonacci_map_find(key);
+  if (!existing) {
+    map[map_size].key = key;
+    map[map_size].dirty = false;
+    map[map_size].clean_rechecks = 0;
+    map_size++;
+  }
 }
 
-struct MemoryInfo wasm2c_fibonacci_map_find(void *key){
+MemoryInfo *wasm2c_fibonacci_map_find(void *key){
   // TODO
+  for(int i = 0; i < map_size; i++){
+    if(map[i].key == key){
+      return &map[i];
+    }
+  }
+  return NULL;
 }
 
 static void init_memories(w2c_fibonacci* instance) {

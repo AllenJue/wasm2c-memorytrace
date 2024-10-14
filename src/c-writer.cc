@@ -2193,7 +2193,7 @@ void CWriter::WriteMemoryInfoDecl() {
   }
   Write("// Memory Info Decl", Newline());
   Write("#define MAX_MAP_SIZE 100", Newline());
-  Write("struct MemoryInfo map[MAX_MAP_SIZE];", Newline());
+  Write("MemoryInfo map[MAX_MAP_SIZE];", Newline());
   Write("int map_size = 0;", Newline());
 }
 
@@ -2203,14 +2203,29 @@ void CWriter::WriteMemoryInfoFuncs() {
   }
   Write("// Memory Info Func", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, 
-    "_map_insert(void *key, struct MemoryInfo *memInfo)", OpenBrace());
+    "_map_insert(void *key, MemoryInfo *memInfo)", OpenBrace());
   Write("// TODO", Newline());
+  Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_,
+    "_map_find(key);", Newline());
+  Write("if (!existing) ", OpenBrace());
+  Write("map[map_size].key = key;", Newline());
+  Write("map[map_size].dirty = false;", Newline());
+  Write("map[map_size].clean_rechecks = 0;", Newline());
+  Write("map_size++;", Newline());
+  Write(CloseBrace(), Newline());
   Write(CloseBrace(), Newline()); 
   Write(Newline());
 
-  Write("struct MemoryInfo ", kAdminSymbolPrefix, module_prefix_, 
+  // write method for finding a MemoryInfo struct
+  Write("MemoryInfo *", kAdminSymbolPrefix, module_prefix_, 
     "_map_find(void *key)", OpenBrace());
   Write("// TODO", Newline());
+  Write("for(int i = 0; i < map_size; i++)", OpenBrace());
+  Write("if(map[i].key == key)", OpenBrace());
+  Write("return &map[i];", Newline());
+  Write(CloseBrace(), Newline());
+  Write(CloseBrace(), Newline());
+  Write("return NULL;", Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
 }
@@ -2220,17 +2235,17 @@ void CWriter::WriteMemoryInfoFuncsDecls() {
     return;
   }
   // Write the MemoryInfo Struct
-  Write("struct MemoryInfo", OpenBrace());
+  Write("typedef struct MemoryInfo", OpenBrace());
   Write("void *key;", Newline());
   Write("bool dirty;", Newline());
   Write("int clean_rechecks;", Newline());
-  Write(CloseBrace(), ";", Newline());
+  Write(CloseBrace(), "MemoryInfo;", Newline());
 
   Write("// Memory Info Func Decls", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, 
-    "_map_insert(void *key, struct MemoryInfo *memInfo);");
+    "_map_insert(void *key, MemoryInfo *memInfo);");
   Write(Newline());
-  Write("struct MemoryInfo ", kAdminSymbolPrefix, module_prefix_, "_map_find(void *key);");
+  Write("MemoryInfo *", kAdminSymbolPrefix, module_prefix_, "_map_find(void *key);");
   Write(Newline());
   Write(Newline());
   // Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_close() ", 
@@ -5199,6 +5214,8 @@ void CWriter::Write(const StoreExpr& expr) {
     Write(");", Newline());
     Write("fprintf(log_file, \"S: %p\\n\", (void*)((u64)instance->w2c_host_mem + (u64)", 
       StackVar(1), ")");
+
+    
     Write(");", Newline());
   }
 
