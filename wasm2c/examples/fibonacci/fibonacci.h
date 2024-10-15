@@ -37,14 +37,17 @@ void wasm2c_fibonacci_instantiate(w2c_fibonacci*, struct w2c_host*);
 void wasm2c_fibonacci_free(w2c_fibonacci*);
 void wasm2c_fibonacci_file_open();
 void wasm2c_fibonacci_file_close();
+void wasm2c_fibonacci_load_instrumentation(w2c_fibonacci*, uint32_t);
+void wasm2c_fibonacci_store_instrumentation(w2c_fibonacci*, uint32_t);
 typedef struct MemoryInfo{
   void *key;
   bool dirty;
   int clean_rechecks;
-}MemoryInfo;
+} MemoryInfo;
 void *ptr;MemoryInfo *existing;// Memory Info Func Decls
 void wasm2c_fibonacci_map_insert(void *key, MemoryInfo *memInfo);
-MemoryInfo *wasm2c_fibonacci_map_find(void *key);//FIXXXXX voidwasm2c_fibonacci_print_map();
+MemoryInfo *wasm2c_fibonacci_map_find(void *key);
+void wasm2c_fibonacci_print_map();
 
 wasm_rt_func_type_t wasm2c_fibonacci_get_func_type(uint32_t param_count, uint32_t result_count, ...);
 
