@@ -51,11 +51,6 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include "fibonacci.h"
-
 /* Fill the wasm buffer with Fibonacci numbers.
  *
  * params:
@@ -76,7 +71,7 @@ u32 w2c_host_fill_buf(struct w2c_host* instance, u32 ptr, u32 size) {
 
     // printf("Buffer before\n");
     // w2c_host_buf_done(instance, ptr, size);
-    return count * 4; // Total bytes filled
+    return size; // Total bytes filled
 }
 
 /* Called when the wasm buffer has been fibonaccid'd.
