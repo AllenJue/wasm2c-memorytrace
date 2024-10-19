@@ -2255,8 +2255,8 @@ void CWriter::WriteMemoryInfoFuncsDecls() {
   Write("int clean_rechecks;", Newline());
   Write(CloseBrace(), " MemoryInfo;", Newline());
 
-  Write("void *ptr;"); // this is a shared ptr variable used as a key later
-  Write("MemoryInfo *existing;"); // this is a shared existing variable used as a MemoryInfo later
+  Write("void *ptr;", Newline()); // this is a shared ptr variable used as a key later
+  Write("MemoryInfo *existing;", Newline()); // this is a shared existing variable used as a MemoryInfo later
   Write("// Memory Info Func Decls", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, 
     "_map_insert(void *key, MemoryInfo *memInfo);");

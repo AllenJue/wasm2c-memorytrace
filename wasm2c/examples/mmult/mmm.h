@@ -37,6 +37,18 @@ void wasm2c_mmm_instantiate(w2c_mmm*, struct w2c_host*);
 void wasm2c_mmm_free(w2c_mmm*);
 void wasm2c_mmm_file_open();
 void wasm2c_mmm_file_close();
+void wasm2c_mmm_load_instrumentation(w2c_mmm*, uint32_t);
+void wasm2c_mmm_store_instrumentation(w2c_mmm*, uint32_t);
+typedef struct MemoryInfo{
+  void *key;
+  bool dirty;
+  int clean_rechecks;
+} MemoryInfo;
+void *ptr;MemoryInfo *existing;// Memory Info Func Decls
+void wasm2c_mmm_map_insert(void *key, MemoryInfo *memInfo);
+MemoryInfo *wasm2c_mmm_map_find(void *key);
+void wasm2c_mmm_print_map();
+
 wasm_rt_func_type_t wasm2c_mmm_get_func_type(uint32_t param_count, uint32_t result_count, ...);
 
 /* import: 'host' 'buf_done' */
