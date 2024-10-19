@@ -5145,12 +5145,18 @@ void CWriter::Write(const ConvertExpr& expr) {
 }
 
 void CWriter::WriteLoadInstrumentationDecls() {
+  if(!s_trace) {
+    return;
+  }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_load_instrumentation(", 
     ModuleInstanceTypeName(), "*, uint32_t);");
   Write(Newline());
 }
 
 void CWriter::WriteLoadInstrumentation() {
+  if(!s_trace) {
+    return;
+  }
   // Write("// Load comment \n");
   // Write("\t\tprintf(\"Memory Address in Load: %p\\n\", instance->w2c_host_mem");
   // Write(");", Newline());
@@ -5241,6 +5247,9 @@ void CWriter::Write(const LoadExpr& expr) {
 }
 
 void CWriter::WriteStoreInstrumentationDecls() {
+  if(!s_trace) {
+    return;
+  }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_store_instrumentation(", 
     ModuleInstanceTypeName(), "*, uint32_t);");
   Write(Newline());

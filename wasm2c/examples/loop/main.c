@@ -40,7 +40,10 @@ int main(int argc, char** argv) {
 }
 
 u32 w2c_host_fill_buf(struct w2c_host* instance, u32 ptr, u32 size) {
-  u32 count = size / 4; 
+  u32 count = size / 4;
+  // change the seed 
+  srand(time(0)); 
+
   for(uint32_t i = 0; i < count; i++) {
     *(uint32_t*)(&instance->memory.data[ptr + i * 4]) = rand() % 100;
   }

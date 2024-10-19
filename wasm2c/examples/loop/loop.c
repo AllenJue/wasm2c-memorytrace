@@ -887,6 +887,7 @@ wasm_rt_func_type_t wasm2c_loop_get_func_type(uint32_t param_count, uint32_t res
 }
 
 void w2c_loop_loop_0(w2c_loop* instance) {
+  u32 var_l0 = 0, var_l1 = 0, var_l2 = 0;
   FUNC_PROLOGUE;
   u32 var_i0, var_i1, var_i2, var_i3;
   var_i0 = 0u;
@@ -894,6 +895,43 @@ void w2c_loop_loop_0(w2c_loop* instance) {
   var_i2 = 4u;
   var_i1 *= var_i2;
   var_i0 = w2c_host_fill_buf(instance->w2c_host_instance, var_i0, var_i1);
+  var_i1 = 0u;
+  var_i2 = 10u;
+  var_i3 = 4u;
+  var_i2 *= var_i3;
+  w2c_host_buf_done(instance->w2c_host_instance, var_i1, var_i2);
+  var_i1 = 0u;
+  var_l0 = var_i1;
+  var_L0: 
+    var_i1 = var_l0;
+    var_i2 = 10u;
+    var_i1 = var_i1 >= var_i2;
+    if (var_i1) {goto var_L0;}
+    var_i1 = 0u;
+    var_i2 = var_l0;
+    var_i3 = 4u;
+    var_i2 *= var_i3;
+    var_i1 += var_i2;
+    wasm2c_loop_load_instrumentation(instance, var_i1);
+    var_i1 = i32_load(instance->w2c_host_mem, (u64)(var_i1));
+    var_l2 = var_i1;
+    var_i1 = 0u;
+    var_l1 = var_i1;
+    var_L1: 
+      var_i1 = var_l1;
+      var_i2 = var_l2;
+      var_i1 = var_i1 >= var_i2;
+      if (var_i1) {goto var_L1;}
+      var_i1 = var_l1;
+      var_i2 = 1u;
+      var_i1 += var_i2;
+      var_l1 = var_i1;
+      goto var_L1;
+    var_i1 = var_l0;
+    var_i2 = 1u;
+    var_i1 += var_i2;
+    var_l0 = var_i1;
+    goto var_L0;
   var_i1 = 0u;
   var_i2 = 10u;
   var_i3 = 4u;
