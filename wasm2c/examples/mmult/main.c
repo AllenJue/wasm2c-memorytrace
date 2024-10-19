@@ -63,6 +63,7 @@ int main(int argc, char** argv) {
   printf("filling buffer done\n\n");
   w2c_mmm_mmm(&mmm);
   printf("done\n");
+  wasm2c_mmm_print_map();
 
   /* Free the rot13 module. */
   wasm2c_mmm_free(&mmm);

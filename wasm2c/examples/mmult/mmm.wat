@@ -73,6 +73,9 @@
               ;; load A[i * size + k] and B[k * size + j]
               (local.set $a_offset (i32.add (local.get $a) (i32.add (i32.mul (local.get $i) (local.get $mat_size)) (local.get $k))))
               (local.set $b_offset (i32.add (local.get $b) (i32.add (i32.mul (local.get $k) (local.get $mat_size)) (local.get $j))))
+              ;; 4 bytes per integer
+              local.set $a_offset (i32.mul (local.get $a_offset) (i32.const 4))
+              local.set $b_offset (i32.mul (local.get $b_offset) (i32.const 4))
 
               ;; debug print
               ;; (call $printval (local.get $k))
@@ -81,12 +84,8 @@
               ;; (call $printval (local.get $b_offset))
               
               ;; load the values
-              (local.set $a_val (i32.load8_s (local.get $a_offset)))
-              (local.set $b_val (i32.load8_s (local.get $b_offset)))
-
-              ;; debug print
-              ;; (call $printval (local.get $a_val))
-              ;; (call $printval (local.get $b_val))
+              (local.set $a_val (i32.load (local.get $a_offset)))
+              (local.set $b_val (i32.load (local.get $b_offset)))
 
               ;; sum += A[i * size + k] * B[k * size + j]
               (local.set $sum (i32.add (local.get $sum) (i32.mul (local.get $a_val) (local.get $b_val))))
@@ -99,6 +98,8 @@
 
           ;; store the sum in C[i * size + j]
           (local.set $c_offset (i32.add (local.get $output_offset) (i32.add (i32.mul (local.get $i) (local.get $mat_size)) (local.get $j))))
+          
+          
           ;; (call $printval (local.get $c_offset))
           (i32.store (local.get $c_offset) (local.get $sum))
 
@@ -155,16 +156,17 @@
   (local.set $elems_a (i32.mul (local.get $size_a) (local.get $size_a)))
 
   ;; Get the starting address of the matrices. c will be stored in a separate buffer, so offset is just 0. integers are 4 bytes long
-  ;; (local.set $a (i32.const 4))
-  ;; (local.set $b (i32.add (i32.const 4) (i32.mul (local.get $elems_a) (i32.const 4))))
+   (local.set $a (i32.const 4))
+   (local.set $b (i32.add (i32.const 4) (i32.mul (local.get $elems_a) (i32.const 4))))
+   (local.set $c (i32.add (local.get $b) (i32.mul (local.get $elems_a) (i32.const 4)))
 
   ;; right now I can only read u8s??
-  (local.set $a (i32.const 1))
-  (local.set $b (i32.add (i32.const 2) (local.get $elems_a)))
-  (local.set $c (i32.add (local.get $b) (local.get $elems_a)))
+  ;;(local.set $a (i32.const 1))
+  ;;(local.set $b (i32.add (i32.const 2) (local.get $elems_a)))
+  ;;(local.set $c (i32.add (local.get $b) (local.get $elems_a)))
   ;; store the resulting matrix size first, then move the pointer to the start of the matrix
   (i32.store (local.get $c) (local.get $size_a))
-  (local.set $c (i32.add (local.get $c) (i32.const 1)))
+  (local.set $c (i32.add (local.get $c) (i32.const 4)))
 
   ;; (call $printval (local.get $a))
   ;; (call $printval (local.get $b))
