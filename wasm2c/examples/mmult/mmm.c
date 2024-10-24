@@ -963,6 +963,8 @@ void w2c_mmm_f6(w2c_mmm* instance, u32 var_p0, u32 var_p1, u32 var_p2, u32 var_p
         var_i1 *= var_i2;
         var_i2 = var_l6;
         var_i1 += var_i2;
+        var_i2 = 4u;
+        var_i1 *= var_i2;
         var_i0 += var_i1;
         var_l11 = var_i0;
         var_i0 = var_p1;
@@ -971,15 +973,17 @@ void w2c_mmm_f6(w2c_mmm* instance, u32 var_p0, u32 var_p1, u32 var_p2, u32 var_p
         var_i1 *= var_i2;
         var_i2 = var_l5;
         var_i1 += var_i2;
+        var_i2 = 4u;
+        var_i1 *= var_i2;
         var_i0 += var_i1;
         var_l12 = var_i0;
         var_i0 = var_l11;
         wasm2c_mmm_load_instrumentation(instance, var_i0);
-        var_i0 = i32_load8_s(instance->w2c_host_mem, (u64)(var_i0));
+        var_i0 = i32_load(instance->w2c_host_mem, (u64)(var_i0));
         var_l9 = var_i0;
         var_i0 = var_l12;
         wasm2c_mmm_load_instrumentation(instance, var_i0);
-        var_i0 = i32_load8_s(instance->w2c_host_mem, (u64)(var_i0));
+        var_i0 = i32_load(instance->w2c_host_mem, (u64)(var_i0));
         var_l10 = var_i0;
         var_i0 = var_l7;
         var_i1 = var_l9;
@@ -999,6 +1003,8 @@ void w2c_mmm_f6(w2c_mmm* instance, u32 var_p0, u32 var_p1, u32 var_p2, u32 var_p
       var_i1 *= var_i2;
       var_i2 = var_l5;
       var_i1 += var_i2;
+      var_i2 = 4u;
+      var_i1 *= var_i2;
       var_i0 += var_i1;
       var_l13 = var_i0;
       var_i0 = var_l13;
@@ -1023,16 +1029,37 @@ void w2c_mmm_f6(w2c_mmm* instance, u32 var_p0, u32 var_p1, u32 var_p2, u32 var_p
 }
 
 void w2c_mmm_mmm_0(w2c_mmm* instance) {
-  u32 var_l0 = 0, var_l1 = 0, var_l2 = 0, var_l3 = 0, var_l4 = 0, var_l5 = 0, var_l6 = 0, var_l7 = 0;
+  u32 var_l0 = 0, var_l1 = 0, var_l2 = 0, var_l3 = 0, var_l4 = 0, var_l5 = 0, var_l6 = 0, var_l7 = 0, 
+      var_l8 = 0;
   FUNC_PROLOGUE;
   u32 var_i0, var_i1, var_i2, var_i3;
   var_i0 = 0u;
-  var_i1 = 35000u;
+  var_i1 = 40000u;
   var_i0 = w2c_host_fill_buf(instance->w2c_host_instance, var_i0, var_i1);
   var_l0 = var_i0;
-  var_i0 = w2c_host_get_size_a(instance->w2c_host_instance);
+  var_i0 = 0u;
+  wasm2c_mmm_load_instrumentation(instance, var_i0);
+  var_i0 = i32_load(instance->w2c_host_mem, (u64)(var_i0));
   var_l1 = var_i0;
-  var_i0 = w2c_host_get_size_b(instance->w2c_host_instance);
+  var_i0 = 4u;
+  var_l4 = var_i0;
+  var_i0 = var_l1;
+  var_i1 = var_l1;
+  var_i0 *= var_i1;
+  var_l3 = var_i0;
+  var_i0 = 4u;
+  var_i1 = var_l3;
+  var_i2 = 4u;
+  var_i1 *= var_i2;
+  var_i0 += var_i1;
+  var_l5 = var_i0;
+  var_i0 = var_l5;
+  wasm2c_mmm_load_instrumentation(instance, var_i0);
+  var_i0 = i32_load(instance->w2c_host_mem, (u64)(var_i0));
+  var_i1 = var_l5;
+  var_i2 = 4u;
+  var_i1 += var_i2;
+  var_l5 = var_i1;
   var_l2 = var_i0;
   var_i0 = var_l1;
   var_i1 = var_l2;
@@ -1043,18 +1070,10 @@ void w2c_mmm_mmm_0(w2c_mmm* instance) {
     w2c_host_error(instance->w2c_host_instance, var_i0, var_i1);
     goto var_Bfunc;
   }
-  var_i0 = var_l1;
-  var_i1 = var_l1;
-  var_i0 *= var_i1;
-  var_l3 = var_i0;
-  var_i0 = 1u;
-  var_l4 = var_i0;
-  var_i0 = 2u;
-  var_i1 = var_l3;
-  var_i0 += var_i1;
-  var_l5 = var_i0;
   var_i0 = var_l5;
   var_i1 = var_l3;
+  var_i2 = 4u;
+  var_i1 *= var_i2;
   var_i0 += var_i1;
   var_l6 = var_i0;
   var_i0 = var_l6;
@@ -1062,7 +1081,7 @@ void w2c_mmm_mmm_0(w2c_mmm* instance) {
   wasm2c_mmm_store_instrumentation(instance, var_i0);
   i32_store(instance->w2c_host_mem, (u64)(var_i0), var_i1);
   var_i0 = var_l6;
-  var_i1 = 1u;
+  var_i1 = 4u;
   var_i0 += var_i1;
   var_l6 = var_i0;
   var_i0 = var_l4;
@@ -1070,9 +1089,15 @@ void w2c_mmm_mmm_0(w2c_mmm* instance) {
   var_i2 = var_l1;
   var_i3 = var_l6;
   w2c_mmm_f6(instance, var_i0, var_i1, var_i2, var_i3);
-  var_i0 = var_l0;
-  var_i1 = var_l3;
+  var_i0 = var_l3;
+  var_i1 = 4u;
+  var_i0 *= var_i1;
+  var_i1 = 4u;
   var_i0 += var_i1;
+  var_l8 = var_i0;
+  var_i0 = var_l8;
+  var_i1 = 3u;
+  var_i0 *= var_i1;
   var_l7 = var_i0;
   var_i0 = 0u;
   var_i1 = var_l7;

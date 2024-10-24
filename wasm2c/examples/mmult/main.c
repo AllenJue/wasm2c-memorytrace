@@ -35,6 +35,7 @@ int main(int argc, char** argv) {
   /* Make sure there is at least one command-line argument. */
   if (argc < 2) {
     printf("Invalid argument. Expected '%s [number sequence e.g. '2 1 1 1 1 2 1 1 1 1']'\n", argv[0]);
+    printf("Instead, got '%s'\n", argv[1]);
     return 1;
   }
   /* Initialize the Wasm runtime. */
@@ -53,16 +54,16 @@ int main(int argc, char** argv) {
   // Move to next arg. Do this first, so the program name is skipped.
   argc--;
   argv++;
-  printf("filling buffer\n");
   int* input = malloc(argc * sizeof(int));
   for (int i = 0; i < argc; i++) {
     input[i] = atoi(argv[i]);
-    printf("%d ", input[i]);
   }
   host.input = input;
-  printf("filling buffer done\n\n");
   w2c_mmm_mmm(&mmm);
-  printf("done\n");
+  // There should be the following checks:
+  // 2*n^2 elements are rechecked n-1 times
+  // n^2 + 3 elements are rechecked 0 times (n^2 for the result, plus 2 loads for A's size and B's size, and 1 store for C's size)
+  // for input sizes of over 8 i think this fills up the map.
   wasm2c_mmm_print_map();
 
   /* Free the rot13 module. */
@@ -84,11 +85,11 @@ int main(int argc, char** argv) {
  *   The number of bytes filled into the buffer. (Must be <= size).
  */
 u32 w2c_host_fill_buf(struct w2c_host* instance, u32 ptr, u32 size) {
-  for (size_t i = 0; i < size; ++i) {
-    if (instance->input[i] == 0) {
-      return i;
-    }
-    instance->memory.data[ptr + i] = instance->input[i];
+  u32 count = size / 4; 
+
+  // fill buffer with input
+  for (size_t i = 0; i < count; i++) {
+    memcpy(&instance->memory.data[ptr + i * 4], &instance->input[i], 4);
   }
   
   return size;
@@ -105,32 +106,47 @@ void w2c_host_buf_done(struct w2c_host* instance, u32 ptr, u32 size) {
   /* The output buffer is not necessarily null-terminated, so use the %*.s
    * printf format to limit the number of characters printed. */
 
-  // print matrix A
-  u32 size_a = instance->memory.data[0];
-  printf("A: %dx%d matrix with values: \n", size_a, size_a);
+  // print matrix A (4 bytes per int)
+  u32 size_a = instance->memory.data[ptr];
+  printf("A: %d x %d matrix with values: \n", size_a, size_a);
   for (size_t i = 0; i < size_a; i++) {
     for (size_t j = 0; j < size_a; j++) {
-      printf("%d ", instance->memory.data[i * size_a + j + 1]);
+      // printf("%d ", instance->memory.data[i * size_a + j + 1]);
+      // reconstruct the value since u32 is 4 bytes
+      u32 val = 0;
+      memcpy(&val, &instance->memory.data[(i * size_a + j + 1) * 4], 4);
+      printf("%d ", val);
     }
     printf("\n");
   }
   // print matrix B
-  u32 b_offs = size_a * size_a + 1;
-  u32 size_b = instance->memory.data[b_offs];
-  printf("B: %dx%d matrix with values: \n", size_b, size_b);
+  u32 b_offs = ptr + 4 + size_a * size_a * 4;
+  u32 size_b = 0;
+  memcpy(&size_b, &instance->memory.data[b_offs], 4);
+  printf("B: %d x %d matrix with values: \n", size_b, size_b);
   for (size_t i = 0; i < size_b; i++) {
     for (size_t j = 0; j < size_b; j++) {
-      printf("%d ", instance->memory.data[b_offs + i * size_b + j + 1]);
+      // printf("%d ", instance->memory.data[b_offs + i * size_b + j + 1]);
+      // reconstruct the value since u32 is 4 bytes
+      u32 val = 0;
+      memcpy(&val, &instance->memory.data[b_offs + (i * size_a + j + 1) * 4], 4);
+      printf("%d ", val);
     }
     printf("\n");
   }
   // print result
-  u32 res_offs = b_offs + 1 + size_b * size_b;
-  u32 size_res = instance->memory.data[res_offs];
-  printf("Result: %dx%d matrix with values: \n", size_res, size_res);
+  u32 res_offs = b_offs + 4 + size_b * size_b * 4;
+  u32 size_res = 0;
+  memcpy(&size_res, &instance->memory.data[res_offs], 4);
+  printf("Result: %d x %d matrix with values: \n", size_res, size_res);
+  // return;
   for (size_t i = 0; i < size_res; i++) {
     for (size_t j = 0; j < size_res; j++) {
-      printf("%d ", instance->memory.data[res_offs + i * size_res + j + 1]);
+      // printf("%d ", instance->memory.data[res_offs + i * size_res + j + 1]);
+      // reconstruct the value since u32 is 4 bytes
+      u32 val = 0;
+      memcpy(&val, &instance->memory.data[res_offs + (i * size_a + j + 1) * 4], 4);
+      printf("%d ", val);
     }
     printf("\n");
   }
@@ -143,7 +159,7 @@ void w2c_host_buf_done(struct w2c_host* instance, u32 ptr, u32 size) {
  *   val: The value to print.
  */
 void w2c_host_printval(struct w2c_host* instance, u32 val) {
-  printf("%d\n", val);
+  printf("value: %d\n", val);
 }
 
 /* Return the size of Matrix A from the wasm module. For simplicity,
@@ -180,4 +196,36 @@ u32 w2c_host_get_size_b(struct w2c_host* instance) {
 */
 void w2c_host_error(struct w2c_host* instance, u32 size_a, u32 size_b) {
   printf("Matrix A and B are not the same size. A: %d, B: %d\n", size_a, size_b);
+}
+
+/* Prints the value pointed to by the provided pointer from wasm.
+ *
+ * params:
+ *  w2c_host: An instance of the w2c_host structure
+ * pointer: The pointer to the value to print.
+ */
+void w2c_host_print(struct w2c_host* instance, u32 pointer) {
+  u32 val = 0;
+  memcpy(&val, &instance->memory.data[pointer], 4);
+  printf("value at pointer: %d \n", val);
+}
+
+/*
+ * Print all memory in the provided buffer.
+ *
+ * params:
+ *  w2c_host: An instance of the w2c_host structure
+ * ptr: The pointer to the buffer to print.
+ * size: The size of the buffer to print.
+*/
+void w2c_host_print_buf(struct w2c_host* instance, u32 ptr, u32 size) {
+  u32 count = size / 4; 
+
+  // fill buffer with input
+  for (size_t i = 0; i < count; i++) {
+    u32 val = 0;
+    memcpy(&val, &instance->memory.data[ptr + i * 4], 4);
+    printf("%ld %d\n", ptr + i * 4, val);
+  }
+  printf("\n");
 }
