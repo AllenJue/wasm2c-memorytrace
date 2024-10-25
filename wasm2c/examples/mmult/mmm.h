@@ -60,12 +60,6 @@ void w2c_host_error(struct w2c_host*, u32, u32);
 /* import: 'host' 'fill_buf' */
 u32 w2c_host_fill_buf(struct w2c_host*, u32, u32);
 
-/* import: 'host' 'get_size_a' */
-u32 w2c_host_get_size_a(struct w2c_host*);
-
-/* import: 'host' 'get_size_b' */
-u32 w2c_host_get_size_b(struct w2c_host*);
-
 /* import: 'host' 'printval' */
 void w2c_host_printval(struct w2c_host*, u32);
 

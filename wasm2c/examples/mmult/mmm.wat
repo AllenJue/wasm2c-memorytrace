@@ -3,12 +3,8 @@
 (import "host" "buf_done" (func $buf_done (param i32 i32)))
 
 ;; debugging/error handling
-(import "host" "printval" (func $printval (param i32)))
+;; (import "host" "printval" (func $printval (param i32))) ;; uncomment to be able to debug print values
 (import "host" "error" (func $error (param i32 i32)))
-
-;; get the size of matrix A and B. you cannot seem to load and store to local variables in wat, so we will have to do this in the main function
-(import "host" "get_size_a" (func $get_size_a (result i32)))
-(import "host" "get_size_b" (func $get_size_b (result i32)))
 
 ;; MMM: Matrix Multiplication in WebAssembly
 ;;
@@ -164,9 +160,7 @@
 
   ;; Call the host to indicate that the buffer is done
   (local.set $mat_size_tmp (i32.add (i32.mul (local.get $elems_a) (i32.const 4)) (i32.const 4)))
-  ;; (call $printval (local.get $mat_size_tmp))
   (local.set $total_buf_size (i32.mul (local.get $mat_size_tmp) (i32.const 3)))
-  ;; (call $printval (local.get $total_buf_size))
 
   (call $buf_done (i32.const 0) (local.get $total_buf_size))
 )

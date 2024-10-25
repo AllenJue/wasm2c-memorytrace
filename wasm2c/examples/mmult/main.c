@@ -162,31 +162,6 @@ void w2c_host_printval(struct w2c_host* instance, u32 val) {
   printf("value: %d\n", val);
 }
 
-/* Return the size of Matrix A from the wasm module. For simplicity,
- * this is the first value in the input buffer as we assume 
- * the matrices are always square.
- *
- * params:
- *   w2c_host: An instance of the w2c_host structure
- * result:
- *   The size of Matrix A.
- */
-u32 w2c_host_get_size_a(struct w2c_host* instance) {
-  return instance->input[0];
-}
-
-/* Return the size of Matrix B from the wasm module.
- * B's size comes after all the values of A.
- *
- * params:
- *   w2c_host: An instance of the w2c_host structure
- * result:
- *   The size of Matrix B.
- */
-u32 w2c_host_get_size_b(struct w2c_host* instance) {
-  return instance->input[instance->input[0] * instance->input[0] + 1];
-}
-
 /* Print an error due to mismatched matrix sizes.
  *
  * params:
@@ -196,36 +171,4 @@ u32 w2c_host_get_size_b(struct w2c_host* instance) {
 */
 void w2c_host_error(struct w2c_host* instance, u32 size_a, u32 size_b) {
   printf("Matrix A and B are not the same size. A: %d, B: %d\n", size_a, size_b);
-}
-
-/* Prints the value pointed to by the provided pointer from wasm.
- *
- * params:
- *  w2c_host: An instance of the w2c_host structure
- * pointer: The pointer to the value to print.
- */
-void w2c_host_print(struct w2c_host* instance, u32 pointer) {
-  u32 val = 0;
-  memcpy(&val, &instance->memory.data[pointer], 4);
-  printf("value at pointer: %d \n", val);
-}
-
-/*
- * Print all memory in the provided buffer.
- *
- * params:
- *  w2c_host: An instance of the w2c_host structure
- * ptr: The pointer to the buffer to print.
- * size: The size of the buffer to print.
-*/
-void w2c_host_print_buf(struct w2c_host* instance, u32 ptr, u32 size) {
-  u32 count = size / 4; 
-
-  // fill buffer with input
-  for (size_t i = 0; i < count; i++) {
-    u32 val = 0;
-    memcpy(&val, &instance->memory.data[ptr + i * 4], 4);
-    printf("%ld %d\n", ptr + i * 4, val);
-  }
-  printf("\n");
 }
