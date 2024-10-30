@@ -44,7 +44,8 @@ typedef struct MemoryInfo{
   bool dirty;
   int clean_rechecks;
 } MemoryInfo;
-void *ptr;MemoryInfo *existing;// Memory Info Func Decls
+extern void *ptr;
+extern MemoryInfo *existing;// Memory Info Func Decls
 void wasm2c_fibonacci_map_insert(void *key, MemoryInfo *memInfo);
 MemoryInfo *wasm2c_fibonacci_map_find(void *key);
 void wasm2c_fibonacci_print_map();
