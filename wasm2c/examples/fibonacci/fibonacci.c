@@ -5,6 +5,8 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
+#include <uthash.h>
+#include <time.h>
 #if defined(__MINGW32__)
 #include <malloc.h>
 #elif defined(_MSC_VER)
@@ -734,8 +736,6 @@ FUNC_TYPE_T(w2c_fibonacci_t2) = "\x07\x80\x96\x7a\x42\xf7\x3e\xe6\x70\x5c\x2f\xa
 FUNC_TYPE_T(w2c_fibonacci_t3) = "\x89\x3a\x3d\x2c\x8f\x4d\x7f\x6d\x6c\x9d\x62\x67\x29\xaf\x3d\x44\x39\x8e\xc3\xf3\xe8\x51\xc1\x99\xb9\xdd\x9f\xd5\x3d\x1f\xd3\xe4";
 
 static FILE* log_file = NULL;
-MemoryInfo *existing;
-void *ptr;
 
 void wasm2c_fibonacci_file_open() {
   log_file = fopen("fibonacci_log.txt", "w");

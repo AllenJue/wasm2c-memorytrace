@@ -10,6 +10,10 @@ R"w2c_template(#include <string.h>
 )w2c_template"
 R"w2c_template(#include <stdio.h>
 )w2c_template"
+R"w2c_template(#include <uthash.h>
+)w2c_template"
+R"w2c_template(#include <time.h>
+)w2c_template"
 R"w2c_template(#if defined(__MINGW32__)
 )w2c_template"
 R"w2c_template(#include <malloc.h>
