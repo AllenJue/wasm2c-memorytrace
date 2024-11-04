@@ -1,3 +1,4 @@
+// TODO - Edit MEMCHECK to check if memory is used already!
 const char* s_source_declarations = R"w2c_template(
 // Computes a pointer to an object of the given size in a little-endian memory.
 )w2c_template"

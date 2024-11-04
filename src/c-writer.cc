@@ -2196,6 +2196,8 @@ void CWriter::WriteMemoryInfoDecl() {
     return;
   }
   Write("// Memory Info Decl", Newline());
+  Write("void *ptr = NULL;", Newline());
+  Write("MemoryInfo *existing = NULL;", Newline());
   Write("#define MAX_MAP_SIZE 100", Newline());
   Write("MemoryInfo map[MAX_MAP_SIZE];", Newline());
   Write("int map_size = 0;", Newline());
@@ -2236,7 +2238,7 @@ void CWriter::WriteMemoryInfoFuncs() {
   // write method for printing out all MemoryInfo map
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_print_map()", OpenBrace());
   Write("for(int i = 0; i < map_size; i++) ", OpenBrace());
-  Write("printf(\"ptr: %p, rechecked: %d times \\n\", map[i].key, map[i].clean_rechecks);",
+  Write("printf(\"ptr: %p, rechecked: %ld times \\n\", map[i].key, map[i].clean_rechecks);",
     Newline());
   Write(CloseBrace(), Newline());
   Write(CloseBrace(), Newline());
@@ -2251,12 +2253,13 @@ void CWriter::WriteMemoryInfoFuncsDecls() {
   // Write the MemoryInfo Struct
   Write("typedef struct MemoryInfo", OpenBrace());
   Write("void *key;", Newline());
+  Write("size_t bounds;", Newline());
   Write("bool dirty;", Newline());
-  Write("int clean_rechecks;", Newline());
+  Write("size_t clean_rechecks;", Newline());
   Write(CloseBrace(), " MemoryInfo;", Newline());
 
-  Write("void *ptr;", Newline()); // this is a shared ptr variable used as a key later
-  Write("MemoryInfo *existing;", Newline()); // this is a shared existing variable used as a MemoryInfo later
+  Write("extern void *ptr;", Newline()); // this is a shared ptr variable used as a key later
+  Write("extern MemoryInfo *existing;", Newline()); // this is a shared existing variable used as a MemoryInfo later
   Write("// Memory Info Func Decls", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, 
     "_map_insert(void *key, MemoryInfo *memInfo);");
