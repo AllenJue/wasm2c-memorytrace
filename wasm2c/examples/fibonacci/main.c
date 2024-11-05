@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
   // Construct an instance of the `rot13` module, which imports from the host.
   w2c_fibonacci fibonnaci;
   wasm2c_fibonacci_instantiate(&fibonnaci, &host);
-  // wasm2c_fibonacci_file_open();
+  wasm2c_fibonacci_file_open();
 
   // while (argc > 1) {
     /* Move to next arg. Do this first, so the program name is skipped. */
@@ -45,9 +45,9 @@ int main(int argc, char** argv) {
     printf("%d\n", input);
     w2c_fibonacci_fibonacci_loop(&fibonnaci, input);
   // }
-  // wasm2c_fibonacci_print_map();
+  wasm2c_fibonacci_print_map();
   wasm2c_fibonacci_free(&fibonnaci);
-  // wasm2c_fibonacci_file_close();
+  wasm2c_fibonacci_file_close();
 
   wasm_rt_free();
   clock_t end = clock();

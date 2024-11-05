@@ -5,6 +5,7 @@
 #include "wasm-rt.h"
 
 #include <stdint.h>
+#include <uthash.h>
 
 #ifndef WASM_RT_CORE_TYPES_DEFINED
 #define WASM_RT_CORE_TYPES_DEFINED
@@ -37,6 +38,20 @@ void wasm2c_fibonacci_instantiate(w2c_fibonacci*, struct w2c_host*);
 void wasm2c_fibonacci_free(w2c_fibonacci*);
 void wasm2c_fibonacci_file_open();
 void wasm2c_fibonacci_file_close();
+void wasm2c_fibonacci_load_instrumentation(w2c_fibonacci*, uint32_t);
+void wasm2c_fibonacci_store_instrumentation(w2c_fibonacci*, uint32_t);
+typedef struct MemoryInfo{
+  void *key;
+  size_t bounds;
+  bool dirty;
+  size_t clean_rechecks;
+  UT_hash_handle hh; /* makes this structure hashable */
+} MemoryInfo;
+// Memory Info Func Decls
+void wasm2c_fibonacci_map_insert(MemoryInfo *memInfo);
+MemoryInfo *wasm2c_fibonacci_map_find(void *key);
+void wasm2c_fibonacci_print_map();
+
 wasm_rt_func_type_t wasm2c_fibonacci_get_func_type(uint32_t param_count, uint32_t result_count, ...);
 
 /* import: 'host' 'buf_done' */
