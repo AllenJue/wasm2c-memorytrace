@@ -33,11 +33,12 @@ wasm_rt_memory_t* w2c_host_mem(struct w2c_host* instance) {
 
 int main(int argc, char** argv) {
   /* Make sure there is at least one command-line argument. */
-  if (argc < 2) {
-    printf("Invalid argument. Expected '%s [number sequence e.g. '2 1 1 1 1 2 1 1 1 1']'\n", argv[0]);
-    printf("Instead, got '%s'\n", argv[1]);
-    return 1;
-  }
+  // if (argc < 2) {
+  //   printf("Invalid argument. Expected '%s [number sequence e.g. '2 1 1 1 1 2 1 1 1 1']'\n", argv[0]);
+  //   printf("Instead, got '%s'\n", argv[1]);
+  //   return 1;
+  // }
+  clock_t start = clock();
   /* Initialize the Wasm runtime. */
   wasm_rt_init();
 
@@ -52,12 +53,16 @@ int main(int argc, char** argv) {
   wasm2c_mmm_file_open();
   
   // Move to next arg. Do this first, so the program name is skipped.
-  argc--;
-  argv++;
-  int* input = malloc(argc * sizeof(int));
-  for (int i = 0; i < argc; i++) {
-    input[i] = atoi(argv[i]);
-  }
+  // argc--;
+  // argv++;
+  // int* input = malloc(argc * sizeof(int));
+  // for (int i = 0; i < argc; i++) {
+  //   input[i] = atoi(argv[i]);
+  // }
+
+  // instead of inputting these manually, try to make it so that I can read directly from a file
+  int input[20] = {3, 9383, 886, 2777, 6915, 7793, 8335, 5386, 492, 6649, 3, 1421, 2362, 27, 8690, 59, 7763, 3926, 540, 3426 };
+
   host.input = input;
   w2c_mmm_mmm(&mmm);
   // There should be the following checks:
@@ -71,7 +76,9 @@ int main(int argc, char** argv) {
   wasm2c_mmm_file_close();
   /* Free the Wasm runtime state. */
   wasm_rt_free();
-
+  clock_t end = clock();
+  double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
+  printf("Time taken: %f seconds\n", time_taken);
   return 0;
 }
 

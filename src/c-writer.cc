@@ -5151,7 +5151,10 @@ void CWriter::WriteLoadInstrumentation() {
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_load_instrumentation(", 
     ModuleInstanceTypeName(), "*instance, uint32_t var)", OpenBrace());
   Write("void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);", Newline());
-  Write("MemoryInfo *existing = wasm2c_fibonacci_map_find(ptr);", Newline());  
+  // Write("MemoryInfo *existing = wasm2c_fibonacci_map_find(ptr);", Newline());  
+  // Write("MemoryInfo *existing = wasm2c_map_find(ptr);", Newline()); 
+  Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_,
+  "_map_find(ptr);", Newline()); 
   Write("printf(\"L: %p\\n\",", " ptr");
   Write(");", Newline());
   Write("fprintf(log_file, \"L: %p\\n\",", " ptr");
@@ -5254,7 +5257,9 @@ void CWriter::WriteStoreInstrumentation() {
     ModuleInstanceTypeName(), "*instance, uint32_t var)", OpenBrace());
   // Write("ptr = ", "(void*)((u64)instance->w2c_host_mem + (u64)", StackVar(1));
   Write("void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);", Newline());
-  Write("MemoryInfo *existing = wasm2c_fibonacci_map_find(ptr);", Newline());  
+  // Write("MemoryInfo *existing = wasm2c_map_find(ptr);", Newline());  
+  Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_,
+    "_map_find(ptr);", Newline());
   Write("printf(\"S: %p\\n\", ptr);" , Newline());
   Write("fprintf(log_file, \"S: %p\\n\", ptr);", Newline());    
 

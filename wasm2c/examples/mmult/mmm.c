@@ -725,14 +725,13 @@ DEFINE_TABLE_FILL(externref)
                                   wasm_rt_tailcallee_t* next)
 #endif
 
-static void w2c_mmm_f4(w2c_mmm*, u32, u32, u32, u32);
+static void w2c_mmm_f3(w2c_mmm*, u32, u32, u32, u32);
 static void w2c_mmm_mmm_0(w2c_mmm*);
 
 FUNC_TYPE_T(w2c_mmm_t0) = "\x92\xfb\x6a\xdf\x49\x07\x0a\x83\xbe\x08\x02\x68\xcd\xf6\x95\x27\x4a\xc2\xf3\xe5\xe4\x7d\x29\x49\xe8\xed\x42\x92\x6a\x9d\xda\xf0";
 FUNC_TYPE_T(w2c_mmm_t1) = "\x26\x10\x81\xe2\x21\x43\xd6\x01\x3e\x2d\x2f\x16\x17\x78\x6f\xba\xb3\x2f\x4d\x54\x9b\x8a\xa9\xdd\xbf\x53\x92\x3c\xd3\x71\xc6\xb2";
-FUNC_TYPE_T(w2c_mmm_t2) = "\x89\x3a\x3d\x2c\x8f\x4d\x7f\x6d\x6c\x9d\x62\x67\x29\xaf\x3d\x44\x39\x8e\xc3\xf3\xe8\x51\xc1\x99\xb9\xdd\x9f\xd5\x3d\x1f\xd3\xe4";
-FUNC_TYPE_T(w2c_mmm_t3) = "\xff\x57\x1f\x83\x74\x67\x5d\x67\x2a\xc8\x0d\x92\x3d\xe8\x47\xa1\x1e\x73\xc7\x03\xa1\xee\x83\x72\x66\xa9\x1c\x9d\xe7\x8c\xdd\xfb";
-FUNC_TYPE_T(w2c_mmm_t4) = "\x36\xa9\xe7\xf1\xc9\x5b\x82\xff\xb9\x97\x43\xe0\xc5\xc4\xce\x95\xd8\x3c\x9a\x43\x0a\xac\x59\xf8\x4e\xf3\xcb\xfa\xb6\x14\x50\x68";
+FUNC_TYPE_T(w2c_mmm_t2) = "\xff\x57\x1f\x83\x74\x67\x5d\x67\x2a\xc8\x0d\x92\x3d\xe8\x47\xa1\x1e\x73\xc7\x03\xa1\xee\x83\x72\x66\xa9\x1c\x9d\xe7\x8c\xdd\xfb";
+FUNC_TYPE_T(w2c_mmm_t3) = "\x36\xa9\xe7\xf1\xc9\x5b\x82\xff\xb9\x97\x43\xe0\xc5\xc4\xce\x95\xd8\x3c\x9a\x43\x0a\xac\x59\xf8\x4e\xf3\xcb\xfa\xb6\x14\x50\x68";
 
 static FILE* log_file = NULL;
 
@@ -740,7 +739,8 @@ void wasm2c_mmm_file_open() {
   log_file = fopen("mmm_log.txt", "w");
 }
 void wasm2c_mmm_load_instrumentation(w2c_mmm*instance, uint32_t var){
-  ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);
+  void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);
+  MemoryInfo *existing = wasm2c_mmm_map_find(ptr);
   printf("L: %p\n", ptr);
   fprintf(log_file, "L: %p\n", ptr);
   existing = wasm2c_mmm_map_find(ptr);
@@ -752,16 +752,18 @@ void wasm2c_mmm_load_instrumentation(w2c_mmm*instance, uint32_t var){
     existing->dirty = false;
   } else {
     printf("Not Existing!\n");
-    MemoryInfo temp;
-    temp.key = ptr;
-    temp.dirty = false;
-    temp.clean_rechecks = 0;
-    wasm2c_mmm_map_insert(ptr, &temp);
+    MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));
+    temp->key = ptr;
+    temp->bounds = 1;
+    temp->dirty = false;
+    temp->clean_rechecks = 0;
+    wasm2c_mmm_map_insert(temp);
   }
 }
 
 void wasm2c_mmm_store_instrumentation(w2c_mmm*instance, uint32_t var){
-  ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);
+  void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);
+  MemoryInfo *existing = wasm2c_mmm_map_find(ptr);
   printf("S: %p\n", ptr);
   fprintf(log_file, "S: %p\n", ptr);
   existing = wasm2c_mmm_map_find(ptr);
@@ -770,42 +772,32 @@ void wasm2c_mmm_store_instrumentation(w2c_mmm*instance, uint32_t var){
     existing->dirty = true;
   } else {
     printf("Not Existing!\n");
-    MemoryInfo temp;
-    temp.key = ptr;
-    temp.dirty = false;
-    temp.clean_rechecks = 0;
-    wasm2c_mmm_map_insert(ptr, &temp);
+    MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));
+    temp->key = ptr;
+    temp->bounds = 1;
+    temp->dirty = false;
+    temp->clean_rechecks = 0;
+    wasm2c_mmm_map_insert(temp);
   }
 }
 
 // Memory Info Decl
-#define MAX_MAP_SIZE 100
-MemoryInfo map[MAX_MAP_SIZE];
-int map_size = 0;
+struct MemoryInfo *map = NULL;    /* important! initialize to NULL */
 // Memory Info Func
-void wasm2c_mmm_map_insert(void *key, MemoryInfo *memInfo){
-  if(map_size >= MAX_MAP_SIZE) {
-    printf("Maximum size allocations reached\n");
-    return;
-  }
-  map[map_size].key = memInfo->key;
-  map[map_size].dirty = memInfo->dirty;
-  map[map_size].clean_rechecks = memInfo->clean_rechecks;
-  map_size++;
+void wasm2c_mmm_map_insert(MemoryInfo *memInfo){
+  HASH_ADD_INT(map, key, memInfo);  /* id: name of key field */
 }
 
 MemoryInfo *wasm2c_mmm_map_find(void *key){
-  for(int i = 0; i < map_size; i++){
-    if(map[i].key == key){
-      return &map[i];
-    }
-  }
-  return NULL;
+  MemoryInfo *m;
+  HASH_FIND_INT(map, &key, m);  /* key already in the hash? */
+  return m;
 }
 
 void wasm2c_mmm_print_map(){
-  for(int i = 0; i < map_size; i++) {
-    printf("ptr: %p, rechecked: %d times \n", map[i].key, map[i].clean_rechecks);
+  MemoryInfo *m;
+  for(m = map; m != NULL; m = m->hh.next){
+    printf("key: %p, clean_rechecks: %ld, bounds: %ld\n",     m->key, m->clean_rechecks, m->bounds);
   }
 }
 
@@ -877,20 +869,11 @@ wasm_rt_func_type_t wasm2c_mmm_get_func_type(uint32_t param_count, uint32_t resu
     va_end(args);
   }
   
-  if (param_count == 1 && result_count == 0) {
-    va_start(args, result_count);
-    if (true && va_arg(args, wasm_rt_type_t) == WASM_RT_I32) {
-      va_end(args);
-      return w2c_mmm_t2;
-    }
-    va_end(args);
-  }
-  
   if (param_count == 4 && result_count == 0) {
     va_start(args, result_count);
     if (true && va_arg(args, wasm_rt_type_t) == WASM_RT_I32 && va_arg(args, wasm_rt_type_t) == WASM_RT_I32 && va_arg(args, wasm_rt_type_t) == WASM_RT_I32 && va_arg(args, wasm_rt_type_t) == WASM_RT_I32) {
       va_end(args);
-      return w2c_mmm_t3;
+      return w2c_mmm_t2;
     }
     va_end(args);
   }
@@ -899,7 +882,7 @@ wasm_rt_func_type_t wasm2c_mmm_get_func_type(uint32_t param_count, uint32_t resu
     va_start(args, result_count);
     if (true) {
       va_end(args);
-      return w2c_mmm_t4;
+      return w2c_mmm_t3;
     }
     va_end(args);
   }
@@ -907,7 +890,7 @@ wasm_rt_func_type_t wasm2c_mmm_get_func_type(uint32_t param_count, uint32_t resu
   return NULL;
 }
 
-void w2c_mmm_f4(w2c_mmm* instance, u32 var_p0, u32 var_p1, u32 var_p2, u32 var_p3) {
+void w2c_mmm_f3(w2c_mmm* instance, u32 var_p0, u32 var_p1, u32 var_p2, u32 var_p3) {
   u32 var_l4 = 0, var_l5 = 0, var_l6 = 0, var_l7 = 0, var_l8 = 0, var_l9 = 0, var_l10 = 0, var_l11 = 0, 
       var_l12 = 0, var_l13 = 0, var_l14 = 0;
   FUNC_PROLOGUE;
@@ -1078,7 +1061,7 @@ void w2c_mmm_mmm_0(w2c_mmm* instance) {
   var_i1 = var_l5;
   var_i2 = var_l1;
   var_i3 = var_l6;
-  w2c_mmm_f4(instance, var_i0, var_i1, var_i2, var_i3);
+  w2c_mmm_f3(instance, var_i0, var_i1, var_i2, var_i3);
   var_i0 = var_l3;
   var_i1 = 4u;
   var_i0 *= var_i1;

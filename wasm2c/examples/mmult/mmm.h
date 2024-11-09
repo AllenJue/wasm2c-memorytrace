@@ -5,6 +5,7 @@
 #include "wasm-rt.h"
 
 #include <stdint.h>
+#include <uthash.h>
 
 #ifndef WASM_RT_CORE_TYPES_DEFINED
 #define WASM_RT_CORE_TYPES_DEFINED
@@ -41,11 +42,13 @@ void wasm2c_mmm_load_instrumentation(w2c_mmm*, uint32_t);
 void wasm2c_mmm_store_instrumentation(w2c_mmm*, uint32_t);
 typedef struct MemoryInfo{
   void *key;
+  size_t bounds;
   bool dirty;
-  int clean_rechecks;
+  size_t clean_rechecks;
+  UT_hash_handle hh; /* makes this structure hashable */
 } MemoryInfo;
-void *ptr;MemoryInfo *existing;// Memory Info Func Decls
-void wasm2c_mmm_map_insert(void *key, MemoryInfo *memInfo);
+// Memory Info Func Decls
+void wasm2c_mmm_map_insert(MemoryInfo *memInfo);
 MemoryInfo *wasm2c_mmm_map_find(void *key);
 void wasm2c_mmm_print_map();
 
@@ -59,9 +62,6 @@ void w2c_host_error(struct w2c_host*, u32, u32);
 
 /* import: 'host' 'fill_buf' */
 u32 w2c_host_fill_buf(struct w2c_host*, u32, u32);
-
-/* import: 'host' 'printval' */
-void w2c_host_printval(struct w2c_host*, u32);
 
 extern const u64 wasm2c_mmm_min_host_mem;
 extern const u64 wasm2c_mmm_max_host_mem;
