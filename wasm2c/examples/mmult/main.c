@@ -79,6 +79,7 @@ int main(int argc, char** argv) {
   clock_t end = clock();
   double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
   printf("Time taken: %f seconds\n", time_taken);
+  // find a way to send this time taken back to client? so I can run multiple times through a bash script
   return 0;
 }
 
