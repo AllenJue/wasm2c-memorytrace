@@ -2196,11 +2196,7 @@ void CWriter::WriteMemoryInfoDecl() {
     return;
   }
   Write("// Memory Info Decl", Newline());
-  Write("void *ptr = NULL;", Newline());
-  Write("MemoryInfo *existing = NULL;", Newline());
-  Write("#define MAX_MAP_SIZE 100", Newline());
-  Write("MemoryInfo map[MAX_MAP_SIZE];", Newline());
-  Write("int map_size = 0;", Newline());
+  Write("struct MemoryInfo *map = NULL;    /* important! initialize to NULL */", Newline());
 }
 
 void CWriter::WriteMemoryInfoFuncs() {
@@ -2209,41 +2205,32 @@ void CWriter::WriteMemoryInfoFuncs() {
   }
   Write("// Memory Info Func", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, 
-    "_map_insert(void *key, MemoryInfo *memInfo)", OpenBrace());
-  // check size of map allocations
-  Write("if(map_size >= MAX_MAP_SIZE) ", OpenBrace());
-  Write("printf(\"Maximum size allocations reached\\n\");", Newline());
-  Write("return;", Newline());
-  Write(CloseBrace(), Newline());
-  // Still have space, so fill out the fields per the *memInfo
-  Write("map[map_size].key = memInfo->key;", Newline());
-  Write("map[map_size].dirty = memInfo->dirty;", Newline());
-  Write("map[map_size].clean_rechecks = memInfo->clean_rechecks;", Newline());
-  Write("map_size++;", Newline());
+    "_map_insert(MemoryInfo *memInfo)", OpenBrace());
+  // Use UTHash here
+  Write("HASH_ADD_INT(map, key, memInfo);  /* id: name of key field */", Newline());
   Write(CloseBrace(), Newline()); 
   Write(Newline());
 
   // write method for finding a MemoryInfo struct
   Write("MemoryInfo *", kAdminSymbolPrefix, module_prefix_, 
     "_map_find(void *key)", OpenBrace());
-  Write("for(int i = 0; i < map_size; i++)", OpenBrace());
-  Write("if(map[i].key == key)", OpenBrace());
-  Write("return &map[i];", Newline());
-  Write(CloseBrace(), Newline());
-  Write(CloseBrace(), Newline());
-  Write("return NULL;", Newline());
+
+  // Use Uthash here
+  Write("MemoryInfo *m;", Newline());
+  Write("HASH_FIND_INT(map, &key, m);  /* key already in the hash? */", Newline());
+  Write("return m;", Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
 
   // write method for printing out all MemoryInfo map
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_print_map()", OpenBrace());
-  Write("for(int i = 0; i < map_size; i++) ", OpenBrace());
-  Write("printf(\"ptr: %p, rechecked: %ld times \\n\", map[i].key, map[i].clean_rechecks);",
-    Newline());
+  Write("MemoryInfo *m;", Newline());
+  Write("for(m = map; m != NULL; m = m->hh.next)", OpenBrace());
+  Write("printf(\"key: %p, clean_rechecks: %ld, bounds: %ld\\n\", \
+    m->key, m->clean_rechecks, m->bounds);", Newline());
   Write(CloseBrace(), Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
-
 }
 
 void CWriter::WriteMemoryInfoFuncsDecls() {
@@ -2253,23 +2240,21 @@ void CWriter::WriteMemoryInfoFuncsDecls() {
   // Write the MemoryInfo Struct
   Write("typedef struct MemoryInfo", OpenBrace());
   Write("void *key;", Newline());
-  Write("size_t bounds;", Newline());
+  Write("size_t bounds;", Newline()); // this will be the bounds. 
   Write("bool dirty;", Newline());
   Write("size_t clean_rechecks;", Newline());
+  Write("UT_hash_handle hh; /* makes this structure hashable */", Newline());
+
   Write(CloseBrace(), " MemoryInfo;", Newline());
 
-  Write("extern void *ptr;", Newline()); // this is a shared ptr variable used as a key later
-  Write("extern MemoryInfo *existing;", Newline()); // this is a shared existing variable used as a MemoryInfo later
   Write("// Memory Info Func Decls", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, 
-    "_map_insert(void *key, MemoryInfo *memInfo);");
+    "_map_insert(MemoryInfo *memInfo);");
   Write(Newline());
   Write("MemoryInfo *", kAdminSymbolPrefix, module_prefix_, "_map_find(void *key);", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_print_map();", Newline());
   Write(Newline());
   Write(Newline());
-  // Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_close() ", 
-  //   OpenBrace(), "fclose(log_file);", Newline(), CloseBrace(), Newline());
 }
 
 static inline bool is_droppable(const ElemSegment* elem_segment) {
@@ -5165,7 +5150,8 @@ void CWriter::WriteLoadInstrumentation() {
   // Write(");", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_load_instrumentation(", 
     ModuleInstanceTypeName(), "*instance, uint32_t var)", OpenBrace());
-  Write("ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);", Newline());
+  Write("void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);", Newline());
+  Write("MemoryInfo *existing = wasm2c_fibonacci_map_find(ptr);", Newline());  
   Write("printf(\"L: %p\\n\",", " ptr");
   Write(");", Newline());
   Write("fprintf(log_file, \"L: %p\\n\",", " ptr");
@@ -5185,12 +5171,13 @@ void CWriter::WriteLoadInstrumentation() {
   Write(CloseBrace(), " else ", OpenBrace());
   Write("printf(\"Not Existing!\\n\");", Newline());
   // otherwise, if it does not exist, we must make update the values in the map
-  Write("MemoryInfo temp;", Newline());
-  Write("temp.key = ptr;", Newline());
-  Write("temp.dirty = false;", Newline());
-  Write("temp.clean_rechecks = 0;", Newline());
+  Write("MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));", Newline());
+  Write("temp->key = ptr;", Newline());
+  Write("temp->bounds = 1;", Newline()); // TODO find bounds
+  Write("temp->dirty = false;", Newline());
+  Write("temp->clean_rechecks = 0;", Newline());
   Write(kAdminSymbolPrefix, module_prefix_, 
-  "_map_insert(ptr, &temp);", Newline());
+  "_map_insert(temp);", Newline());
   Write(CloseBrace(), Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
@@ -5266,8 +5253,8 @@ void CWriter::WriteStoreInstrumentation() {
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_store_instrumentation(", 
     ModuleInstanceTypeName(), "*instance, uint32_t var)", OpenBrace());
   // Write("ptr = ", "(void*)((u64)instance->w2c_host_mem + (u64)", StackVar(1));
-  Write("ptr = ", "(void*)((u64)instance->w2c_host_mem + (u64)var");
-  Write(");", Newline());
+  Write("void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);", Newline());
+  Write("MemoryInfo *existing = wasm2c_fibonacci_map_find(ptr);", Newline());  
   Write("printf(\"S: %p\\n\", ptr);" , Newline());
   Write("fprintf(log_file, \"S: %p\\n\", ptr);", Newline());    
 
@@ -5281,12 +5268,13 @@ void CWriter::WriteStoreInstrumentation() {
   Write(CloseBrace(), " else ", OpenBrace());
   Write("printf(\"Not Existing!\\n\");", Newline());
   // otherwise, new store, just mark as clean and store it
-  Write("MemoryInfo temp;", Newline());
-  Write("temp.key = ptr;", Newline());
-  Write("temp.dirty = false;", Newline());
-  Write("temp.clean_rechecks = 0;", Newline());
+  Write("MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));", Newline());
+  Write("temp->key = ptr;", Newline());
+  Write("temp->bounds = 1;", Newline()); // TODO find bounds
+  Write("temp->dirty = false;", Newline());
+  Write("temp->clean_rechecks = 0;", Newline());
   Write(kAdminSymbolPrefix, module_prefix_, 
-  "_map_insert(ptr, &temp);", Newline());
+  "_map_insert(temp);", Newline());
   Write(CloseBrace(), Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
