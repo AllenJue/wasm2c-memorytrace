@@ -16,10 +16,10 @@ wasm_rt_memory_t* w2c_host_mem(struct w2c_host* instance) {
 
 int main(int argc, char** argv) {
   /* Make sure there is at least one command-line argument. */
-  // if (argc < 2) {
-  //   printf("Invalid argument. Expected '%s WORD...'\n", argv[0]);
-  //   return 1;
-  // }
+  if (argc < 2) {
+    printf("Invalid argument. Expected '%s WORD...'\n", argv[0]);
+    return 1;
+  }
 
     /* Initialize the Wasm runtime. */
   clock_t start = clock();
@@ -36,15 +36,15 @@ int main(int argc, char** argv) {
   wasm2c_fibonacci_instantiate(&fibonnaci, &host);
   wasm2c_fibonacci_file_open();
 
-  // while (argc > 1) {
+  while (argc > 1) {
     /* Move to next arg. Do this first, so the program name is skipped. */
-    // argc--;
-    // argv++;
-    // u32 input = atoi(argv[0]);  // Convert argument to integer
-    u32 input = 10;
+    argc--;
+    argv++;
+    u32 input = atoi(argv[0]);  // Convert argument to integer
+    // u32 input = 10;
     printf("%d\n", input);
     w2c_fibonacci_fibonacci_loop(&fibonnaci, input);
-  // }
+  }
   wasm2c_fibonacci_print_map();
   wasm2c_fibonacci_free(&fibonnaci);
   wasm2c_fibonacci_file_close();
