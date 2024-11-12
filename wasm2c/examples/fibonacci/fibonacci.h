@@ -31,7 +31,8 @@ extern wasm_rt_memory_t* w2c_host_mem(struct w2c_host*);
 typedef struct w2c_fibonacci {
   struct w2c_host* w2c_host_instance;
   /* import: 'host' 'mem' */
-  wasm_rt_memory_t *w2c_host_mem;
+  wasm_rt_memory_t *w2c_host_mem;//WriteMemory
+
 } w2c_fibonacci;
 
 void wasm2c_fibonacci_instantiate(w2c_fibonacci*, struct w2c_host*);

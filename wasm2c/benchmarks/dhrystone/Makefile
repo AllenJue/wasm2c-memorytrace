@@ -2,8 +2,8 @@ WABT_ROOT=../../..
 CC=clang
 CFLAGS=-I$(WABT_ROOT)/wasm2c -I $(WABT_ROOT)/third_party/uvwasi/include/ -I $(WABT_ROOT)/third_party/uthash/src -O3
 CFLAGS_SEGUE=-DWASM_RT_ALLOW_SEGUE=1 -mfsgsbase
-LDFLAGS=-L$(WABT_ROOT)/third_party/uvwasi/build/build -L$(WABT_ROOT)/third_party/libuv/build -O3
-LDLIBS=$(WABT_ROOT)/third_party/uvwasi/build/libuvwasi_a.a $(WABT_ROOT)/third_party/libuv/build/libuv.a -lm -lpthread -ldl
+LDFLAGS=-L$(WABT_ROOT)/third_party/uvwasi/build -L$(WABT_ROOT)/third_party/libuv/build -O3
+LDLIBS=$(WABT_ROOT)/third_party/uvwasi/build/libuvwasi_a.a $(WABT_ROOT)/third_party/libuv/build/libuv.a -lm -lpthread -ldl -DWASM_RT_USE_MMAP=0
 
 
 all: benchmark
@@ -15,7 +15,7 @@ dhrystone.wasm: src/dhry_1.c src/dhry_2.c
 	$(WABT_ROOT)/wasi-sdk-20.0/bin/clang -O3 $^ -o $@
 
 dhrystone.c: dhrystone.wasm $(WABT_ROOT)/bin/wasm2c
-	$(WABT_ROOT)/bin/wasm2c $< -o $@ --disable-simd 
+	$(WABT_ROOT)/bin/wasm2c $< -o $@ --disable-simd -t
 
 dhrystone_native: src/dhry_1.c src/dhry_2.c
 	clang -O3 $^ -o $@

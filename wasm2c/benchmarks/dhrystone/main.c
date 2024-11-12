@@ -218,6 +218,7 @@ int main(int argc, char const* argv[]) {
   uvwasi_t local_uvwasi_state;
   uvwasi_options_t init_options;
 
+  wasm2c_dhrystone_file_open();
   // pass in standard descriptors
   init_options.in = 0;
   init_options.out = 1;
@@ -259,6 +260,8 @@ int main(int argc, char const* argv[]) {
   wasm2c_dhrystone_free(&dhrystone);
 
   uvwasi_destroy(&local_uvwasi_state);
+  wasm2c_dhrystone_file_close();
+  wasm2c_dhrystone_print_map(); 
   wasm_rt_free();
 
   return 0;

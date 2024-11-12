@@ -2100,11 +2100,14 @@ void CWriter::WriteMemories() {
 
 void CWriter::WriteMemory(const std::string& name, const Memory& memory) {
   Write(GetMemoryTypeString(memory), " ", name, ";");
+    Write("//WriteMemory\n");
+
 }
 
 void CWriter::WriteMemoryPtr(const std::string& name, const Memory& memory) {
   Write(GetMemoryTypeString(memory), "* ", name, "(", ModuleInstanceTypeName(),
         "* instance)");
+  Write("//WriteMemoryPtr\n");
 }
 
 void CWriter::WriteTables() {
@@ -5145,9 +5148,6 @@ void CWriter::WriteLoadInstrumentation() {
   if(!s_trace) {
     return;
   }
-  // Write("// Load comment \n");
-  // Write("\t\tprintf(\"Memory Address in Load: %p\\n\", instance->w2c_host_mem");
-  // Write(");", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_load_instrumentation(", 
     ModuleInstanceTypeName(), "*instance, uint32_t var)", OpenBrace());
   Write("void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);", Newline());
@@ -5161,8 +5161,6 @@ void CWriter::WriteLoadInstrumentation() {
   // TODO
   // If the thing already exists, if it was already clean, increment rechecks
   // Finally, set it to clean
-  Write("existing = ", kAdminSymbolPrefix, module_prefix_,
-    "_map_find(ptr);", Newline());
   Write("if (existing) ", OpenBrace());
   Write("printf(\"Existing!\\n\");", Newline());
   Write("if (!existing->dirty ) ", OpenBrace());
@@ -5217,10 +5215,6 @@ void CWriter::Write(const LoadExpr& expr) {
   // clang-format on
   // printf("s_trace in load %d\n", s_trace);
   // Instrumentation code to print memory addresses
-  if (s_trace) {
-    Write(kAdminSymbolPrefix, module_prefix_, "_load_instrumentation(instance, ", StackVar(0),
-      ");", Newline());
-  }
 
   // printf("Load writing\n");
   Memory* memory = module_->memories[module_->GetMemoryIndex(expr.memidx)];
@@ -5233,8 +5227,15 @@ void CWriter::Write(const LoadExpr& expr) {
   if (expr.offset != 0)
     Write(" + ", expr.offset, "u");
   Write(");", Newline());
+
+  if (s_trace) {
+    Write(kAdminSymbolPrefix, module_prefix_, "_load_instrumentation(instance, ", StackVar(0),
+      ");", Newline());
+  }
+
   DropTypes(1);
   PushType(result_type);
+
 }
 
 void CWriter::WriteStoreInstrumentationDecls() {
@@ -5250,21 +5251,14 @@ void CWriter::WriteStoreInstrumentation() {
   if(!s_trace) {
     return;
   }
-  // Write("// Store comment \n");
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_store_instrumentation(", 
     ModuleInstanceTypeName(), "*instance, uint32_t var)", OpenBrace());
-  // Write("ptr = ", "(void*)((u64)instance->w2c_host_mem + (u64)", StackVar(1));
   Write("void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);", Newline());
-  // Write("MemoryInfo *existing = wasm2c_map_find(ptr);", Newline());  
   Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_,
     "_map_find(ptr);", Newline());
   Write("printf(\"S: %p\\n\", ptr);" , Newline());
   Write("fprintf(log_file, \"S: %p\\n\", ptr);", Newline());    
 
-  // TODO
-  // if existing, mark as dirty
-  Write("existing = ", kAdminSymbolPrefix, module_prefix_,
-    "_map_find(ptr);", Newline());
   Write("if (existing) ", OpenBrace());
   Write("printf(\"Existing!\\n\");", Newline());
   Write("existing->dirty = true;", Newline());
@@ -5302,10 +5296,6 @@ void CWriter::Write(const StoreExpr& expr) {
       WABT_UNREACHABLE;
   }
   // clang-format on
-  if (s_trace) {
-    Write(kAdminSymbolPrefix, module_prefix_, "_store_instrumentation(instance, ", StackVar(1),
-      ");", Newline());
-  }
 
   Memory* memory = module_->memories[module_->GetMemoryIndex(expr.memidx)];
   func = GetMemoryAPIString(*memory, func);
@@ -5315,6 +5305,10 @@ void CWriter::Write(const StoreExpr& expr) {
   if (expr.offset != 0)
     Write(" + ", expr.offset);
   Write(", ", StackVar(0), ");", Newline());
+  if (s_trace) {
+    Write(kAdminSymbolPrefix, module_prefix_, "_store_instrumentation(instance, ", StackVar(1),
+      ");", Newline());
+  }
   DropTypes(2);
 }
 
