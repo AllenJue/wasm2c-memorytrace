@@ -31,7 +31,8 @@ extern wasm_rt_memory_t* w2c_host_mem(struct w2c_host*);
 typedef struct w2c_mmm {
   struct w2c_host* w2c_host_instance;
   /* import: 'host' 'mem' */
-  wasm_rt_memory_t *w2c_host_mem;
+  wasm_rt_memory_t *w2c_host_mem;//WriteMemory
+
 } w2c_mmm;
 
 void wasm2c_mmm_instantiate(w2c_mmm*, struct w2c_host*);

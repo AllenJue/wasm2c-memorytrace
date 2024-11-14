@@ -7,7 +7,7 @@
 std::vector<int> gen_matrix(int n) {
   std::vector<int> matrix;
   for (int i = 0; i < n * n; i++) {
-    matrix.push_back(rand() % 10000);
+    matrix.push_back(rand() % 100);
   }
   return matrix;
 }
@@ -21,6 +21,10 @@ void write_matrices(const std::string& filename, const std::vector<int>& matrix_
     return;
   }
 
+  // print out how many elements need to be read
+  int num_elements = 2 + matrix_a.size() + matrix_b.size();
+  file << num_elements << " ";
+
   file << n << " ";
   for (int i = 0; i < matrix_a.size(); i++) {
     file << matrix_a[i] << " ";
@@ -30,7 +34,7 @@ void write_matrices(const std::string& filename, const std::vector<int>& matrix_
   for (int i = 0; i < matrix_b.size(); i++) {
     file << matrix_b[i] << " ";
   }
-  file << std::endl;
+  // file << std::endl;
 
   file.close();
 }

@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
   /* Create a structure to store the memory and current string, allocating 1
     page of Wasm memory (64 KiB) that the mmm module instance will import. */
   struct w2c_host host;
-  wasm_rt_allocate_memory(&host.memory, 1, 1, false);
+  wasm_rt_allocate_memory(&host.memory, 256, 256, false);
 
   // Construct an instance of the `mmm` module, which imports from the host.
   w2c_mmm mmm;
@@ -60,8 +60,31 @@ int main(int argc, char** argv) {
   //   input[i] = atoi(argv[i]);
   // }
 
+  int default_input[20] = {3, 9383, 886, 2777, 6915, 7793, 8335, 5386, 492, 6649, 3, 1421, 2362, 27, 8690, 59, 7763, 3926, 540, 3426 };
+  FILE *file = fopen("input.txt", "r");
+  int* input = NULL;
+  if (file == NULL) {
+    printf("File not found. Using default input.\n");
+    input = malloc(20 * sizeof(int));
+    for (int i = 0; i < 20; i++) {
+      input[i] = default_input[i];
+      // printf("%d ", input[i]);
+    }
+    // printf("\n");
+  } else {
+    printf("File found. Using input from file.\n");
+    int n;
+    fscanf(file, "%d", &n);
+    printf("total elems: %d, buffer size: %d\n", n, n*4);
+    input = (int*) malloc(n * sizeof(int));
+    for (int i = 0; i < n; i++) {
+      fscanf(file, "%d", &input[i]);
+    }
+    fclose(file);
+  }
+
   // instead of inputting these manually, try to make it so that I can read directly from a file
-  int input[20] = {3, 9383, 886, 2777, 6915, 7793, 8335, 5386, 492, 6649, 3, 1421, 2362, 27, 8690, 59, 7763, 3926, 540, 3426 };
+  // int input[20] = {3, 9383, 886, 2777, 6915, 7793, 8335, 5386, 492, 6649, 3, 1421, 2362, 27, 8690, 59, 7763, 3926, 540, 3426 };
 
   host.input = input;
   w2c_mmm_mmm(&mmm);
@@ -69,7 +92,7 @@ int main(int argc, char** argv) {
   // 2*n^2 elements are rechecked n-1 times
   // n^2 + 3 elements are rechecked 0 times (n^2 for the result, plus 2 loads for A's size and B's size, and 1 store for C's size)
   // for input sizes of over 8 i think this fills up the map.
-  wasm2c_mmm_print_map();
+  // wasm2c_mmm_print_map(); // comment out if benchmarking
 
   /* Free the rot13 module. */
   wasm2c_mmm_free(&mmm);
@@ -78,8 +101,8 @@ int main(int argc, char** argv) {
   wasm_rt_free();
   clock_t end = clock();
   double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
-  printf("Time taken: %f seconds\n", time_taken);
-  // find a way to send this time taken back to client? so I can run multiple times through a bash script
+  fprintf(stderr, "%d %f\n", input[0], time_taken); //format: <input_size>,<time_taken(s)>
+
   return 0;
 }
 
@@ -97,6 +120,9 @@ u32 w2c_host_fill_buf(struct w2c_host* instance, u32 ptr, u32 size) {
 
   // fill buffer with input
   for (size_t i = 0; i < count; i++) {
+    if (instance->input[i] == 0) {
+      return i;
+    }
     memcpy(&instance->memory.data[ptr + i * 4], &instance->input[i], 4);
   }
   

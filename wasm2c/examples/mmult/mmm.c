@@ -743,7 +743,6 @@ void wasm2c_mmm_load_instrumentation(w2c_mmm*instance, uint32_t var){
   MemoryInfo *existing = wasm2c_mmm_map_find(ptr);
   printf("L: %p\n", ptr);
   fprintf(log_file, "L: %p\n", ptr);
-  existing = wasm2c_mmm_map_find(ptr);
   if (existing) {
     printf("Existing!\n");
     if (!existing->dirty ) {
@@ -766,7 +765,6 @@ void wasm2c_mmm_store_instrumentation(w2c_mmm*instance, uint32_t var){
   MemoryInfo *existing = wasm2c_mmm_map_find(ptr);
   printf("S: %p\n", ptr);
   fprintf(log_file, "S: %p\n", ptr);
-  existing = wasm2c_mmm_map_find(ptr);
   if (existing) {
     printf("Existing!\n");
     existing->dirty = true;
@@ -951,12 +949,12 @@ void w2c_mmm_f3(w2c_mmm* instance, u32 var_p0, u32 var_p1, u32 var_p2, u32 var_p
         var_i0 += var_i1;
         var_l12 = var_i0;
         var_i0 = var_l11;
-        wasm2c_mmm_load_instrumentation(instance, var_i0);
         var_i0 = i32_load(instance->w2c_host_mem, (u64)(var_i0));
+        wasm2c_mmm_load_instrumentation(instance, var_i0);
         var_l9 = var_i0;
         var_i0 = var_l12;
-        wasm2c_mmm_load_instrumentation(instance, var_i0);
         var_i0 = i32_load(instance->w2c_host_mem, (u64)(var_i0));
+        wasm2c_mmm_load_instrumentation(instance, var_i0);
         var_l10 = var_i0;
         var_i0 = var_l7;
         var_i1 = var_l9;
@@ -982,8 +980,8 @@ void w2c_mmm_f3(w2c_mmm* instance, u32 var_p0, u32 var_p1, u32 var_p2, u32 var_p
       var_l13 = var_i0;
       var_i0 = var_l13;
       var_i1 = var_l7;
-      wasm2c_mmm_store_instrumentation(instance, var_i0);
       i32_store(instance->w2c_host_mem, (u64)(var_i0), var_i1);
+      wasm2c_mmm_store_instrumentation(instance, var_i0);
       var_i0 = var_l5;
       var_i1 = 1u;
       var_i0 += var_i1;
@@ -1007,12 +1005,12 @@ void w2c_mmm_mmm_0(w2c_mmm* instance) {
   FUNC_PROLOGUE;
   u32 var_i0, var_i1, var_i2, var_i3;
   var_i0 = 0u;
-  var_i1 = 40000u;
+  var_i1 = 16777216u;
   var_i0 = w2c_host_fill_buf(instance->w2c_host_instance, var_i0, var_i1);
   var_l0 = var_i0;
   var_i0 = 0u;
-  wasm2c_mmm_load_instrumentation(instance, var_i0);
   var_i0 = i32_load(instance->w2c_host_mem, (u64)(var_i0));
+  wasm2c_mmm_load_instrumentation(instance, var_i0);
   var_l1 = var_i0;
   var_i0 = 4u;
   var_l4 = var_i0;
@@ -1027,8 +1025,8 @@ void w2c_mmm_mmm_0(w2c_mmm* instance) {
   var_i0 += var_i1;
   var_l5 = var_i0;
   var_i0 = var_l5;
-  wasm2c_mmm_load_instrumentation(instance, var_i0);
   var_i0 = i32_load(instance->w2c_host_mem, (u64)(var_i0));
+  wasm2c_mmm_load_instrumentation(instance, var_i0);
   var_i1 = var_l5;
   var_i2 = 4u;
   var_i1 += var_i2;
@@ -1051,8 +1049,8 @@ void w2c_mmm_mmm_0(w2c_mmm* instance) {
   var_l6 = var_i0;
   var_i0 = var_l6;
   var_i1 = var_l1;
-  wasm2c_mmm_store_instrumentation(instance, var_i0);
   i32_store(instance->w2c_host_mem, (u64)(var_i0), var_i1);
+  wasm2c_mmm_store_instrumentation(instance, var_i0);
   var_i0 = var_l6;
   var_i1 = 4u;
   var_i0 += var_i1;

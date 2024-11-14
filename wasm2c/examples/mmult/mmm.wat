@@ -119,8 +119,8 @@
   (local $total_buf_size i32)
   (local $mat_size_tmp i32)
 
-  ;; Ask host to fill up to 64KB of memory with data. Some data may not be used.
-  (call $fill_buf (i32.const 0) (i32.const 40000))
+  ;; Ask host to fill up to 64KB*256 of memory with data. Some data may not be used.
+  (call $fill_buf (i32.const 0) (i32.const 16777216))
 
   ;; The host returns the size filled.
   (local.set $size)
