@@ -407,10 +407,8 @@ class CWriter {
   void WriteFileCloseDecls();
   void WriteFileClose();
   // create memory struct declarations
-  void WriteLoadInstrumentationDecls();
-  void WriteStoreInstrumentationDecls();
-  void WriteLoadInstrumentation();
-  void WriteStoreInstrumentation();
+  void WriteMemInstrumentationDecls();
+  void WriteMemInstrumentation();
   void WriteMemoryInfoDecl();
   void WriteMemoryInfoFuncsDecls();
   void WriteMemoryInfoFuncs();
@@ -2200,7 +2198,6 @@ void CWriter::WriteMemoryInfoDecl() {
   }
   Write("// Memory Info Decl", Newline());
   Write("struct MemoryInfo *map = NULL;    /* important! initialize to NULL */", Newline());
-  Write("static size_t depth = 0;", Newline());
 }
 
 void CWriter::WriteMemoryInfoFuncs() {
@@ -3138,9 +3135,6 @@ void CWriter::Write(const Func& func) {
   Write(func.decl.sig.result_types, " ",
         GlobalName(ModuleFieldType::Func, func.name), "(");
   WriteParamsAndLocals();
-  if(s_trace) {
-    Write("depth++;", Newline());
-  }
   Write("FUNC_PROLOGUE;", Newline());
 
   PushFuncSection();
@@ -3153,9 +3147,6 @@ void CWriter::Write(const Func& func) {
   PopLabel();
   ResetTypeStack(0);
   PushTypes(func.decl.sig.result_types);
-  if(s_trace) {
-    Write("depth--;", Newline());
-  }
   Write("FUNC_EPILOGUE;", Newline());
 
   // Return the top of the stack implicitly.
@@ -5141,22 +5132,23 @@ void CWriter::Write(const ConvertExpr& expr) {
   }
 }
 
-void CWriter::WriteLoadInstrumentationDecls() {
+void CWriter::WriteMemInstrumentationDecls() {
   if(!s_trace) {
     return;
   }
-  Write("void ", kAdminSymbolPrefix, module_prefix_, "_load_instrumentation(", 
+  Write("wasm_rt_memory_t* ", kAdminSymbolPrefix, module_prefix_, "(", kGlobalSymbolPrefix, 
+    module_prefix_, "* instance);", Newline());
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(", 
     ModuleInstanceTypeName(), "*, uint32_t);");
   Write(Newline());
 }
 
-void CWriter::WriteLoadInstrumentation() {
+void CWriter::WriteMemInstrumentation() {
   if(!s_trace) {
     return;
   }
-  Write("void ", kAdminSymbolPrefix, module_prefix_, "_load_instrumentation(", 
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(", 
     ModuleInstanceTypeName(), "*instance, uint32_t var)", OpenBrace());
-  // Write("void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);", Newline());
   Write("void *ptr = (void*)((u64)", kGlobalSymbolPrefix, module_prefix_,"_memory(instance) + (u64)var);", Newline());
   Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_,
   "_map_find(ptr);", Newline()); 
@@ -5166,10 +5158,6 @@ void CWriter::WriteLoadInstrumentation() {
   // Finally, set it to clean
   Write("if (existing) ", OpenBrace());
   // Write("printf(\"Existing!\\n\");", Newline());
-  Write("if (!existing->dirty ) ", OpenBrace());
-  Write("existing->clean_rechecks++;", Newline());
-  Write(CloseBrace(), Newline());
-  Write("existing->dirty = false;", Newline());
   Write(CloseBrace(), " else ", OpenBrace());
   // Write("printf(\"Not Existing!\\n\");", Newline());
   // otherwise, if it does not exist, we must make update the values in the map
@@ -5232,50 +5220,13 @@ void CWriter::Write(const LoadExpr& expr) {
   Write(");", Newline());
 
   if (s_trace) {
-    Write(kAdminSymbolPrefix, module_prefix_, "_load_instrumentation(instance, ", StackVar(0),
+    Write(kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(instance, ", StackVar(0),
       ");", Newline());
   }
 
   DropTypes(1);
   PushType(result_type);
 
-}
-
-void CWriter::WriteStoreInstrumentationDecls() {
-  if(!s_trace) {
-    return;
-  }
-  Write("void ", kAdminSymbolPrefix, module_prefix_, "_store_instrumentation(", 
-    ModuleInstanceTypeName(), "*, uint32_t);");
-  Write(Newline());
-}
-
-void CWriter::WriteStoreInstrumentation() {
-  if(!s_trace) {
-    return;
-  }
-  Write("void ", kAdminSymbolPrefix, module_prefix_, "_store_instrumentation(", 
-    ModuleInstanceTypeName(), "*instance, uint32_t var)", OpenBrace());
-  // Write("void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);", Newline());
-  Write("void *ptr = (void*)((u64)", kGlobalSymbolPrefix, module_prefix_,"_memory(instance) + (u64)var);", Newline());
-  Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_,
-    "_map_find(ptr);", Newline());
-  Write("fprintf(log_file, \"S: %p\\n\", ptr);", Newline());    
-
-  Write("if (existing) ", OpenBrace());
-  Write("existing->dirty = true;", Newline());
-  Write(CloseBrace(), " else ", OpenBrace());
-  // otherwise, new store, just mark as clean and store it
-  Write("MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));", Newline());
-  Write("temp->key = ptr;", Newline());
-  Write("temp->bounds = 1;", Newline()); // TODO find bounds
-  Write("temp->dirty = false;", Newline());
-  Write("temp->clean_rechecks = 0;", Newline());
-  Write(kAdminSymbolPrefix, module_prefix_, 
-  "_map_insert(temp);", Newline());
-  Write(CloseBrace(), Newline());
-  Write(CloseBrace(), Newline());
-  Write(Newline());
 }
 
 void CWriter::Write(const StoreExpr& expr) {
@@ -5307,7 +5258,7 @@ void CWriter::Write(const StoreExpr& expr) {
     Write(" + ", expr.offset);
   Write(", ", StackVar(0), ");", Newline());
   if (s_trace) {
-    Write(kAdminSymbolPrefix, module_prefix_, "_store_instrumentation(instance, ", StackVar(1),
+    Write(kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(instance, ", StackVar(1),
       ");", Newline());
   }
   DropTypes(2);
@@ -6055,8 +6006,7 @@ void CWriter::WriteCHeader() {
   // Logging stuff here
   WriteFileOpenDecls();
   WriteFileCloseDecls();
-  WriteLoadInstrumentationDecls();
-  WriteStoreInstrumentationDecls();
+  WriteMemInstrumentationDecls();
   WriteMemoryInfoFuncsDecls();
   WriteGetFuncTypeDecl();
   WriteMultivalueResultTypes();
@@ -6096,8 +6046,7 @@ void CWriter::WriteCSource() {
   WriteGlobalInitializers();
   WriteFileDecl();
   WriteFileOpen();
-  WriteLoadInstrumentation();
-  WriteStoreInstrumentation();
+  WriteMemInstrumentation();
   WriteMemoryInfoDecl();
   WriteMemoryInfoFuncs();
   WriteDataInitializers();
