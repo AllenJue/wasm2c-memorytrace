@@ -2200,6 +2200,7 @@ void CWriter::WriteMemoryInfoDecl() {
   }
   Write("// Memory Info Decl", Newline());
   Write("struct MemoryInfo *map = NULL;    /* important! initialize to NULL */", Newline());
+  Write("static size_t depth = 0;", Newline());
 }
 
 void CWriter::WriteMemoryInfoFuncs() {
@@ -3101,7 +3102,6 @@ void CWriter::BeginFunction(const Func& func) {
   stack_var_sym_map_.clear();
   func_sections_.clear();
   func_includes_.clear();
-
   /*
    * If offset of stream_ is 0, this is the first time some function is written
    * to this stream, then write multi c top.
@@ -3138,6 +3138,9 @@ void CWriter::Write(const Func& func) {
   Write(func.decl.sig.result_types, " ",
         GlobalName(ModuleFieldType::Func, func.name), "(");
   WriteParamsAndLocals();
+  if(s_trace) {
+    Write("depth++;", Newline());
+  }
   Write("FUNC_PROLOGUE;", Newline());
 
   PushFuncSection();
@@ -3150,6 +3153,9 @@ void CWriter::Write(const Func& func) {
   PopLabel();
   ResetTypeStack(0);
   PushTypes(func.decl.sig.result_types);
+  if(s_trace) {
+    Write("depth--;", Newline());
+  }
   Write("FUNC_EPILOGUE;", Newline());
 
   // Return the top of the stack implicitly.
@@ -5150,25 +5156,22 @@ void CWriter::WriteLoadInstrumentation() {
   }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_load_instrumentation(", 
     ModuleInstanceTypeName(), "*instance, uint32_t var)", OpenBrace());
-  Write("void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);", Newline());
+  // Write("void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);", Newline());
+  Write("void *ptr = (void*)((u64)", kGlobalSymbolPrefix, module_prefix_,"_memory(instance) + (u64)var);", Newline());
   Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_,
   "_map_find(ptr);", Newline()); 
-  Write("printf(\"L: %p\\n\",", " ptr");
-  Write(");", Newline());
-  Write("fprintf(log_file, \"L: %p\\n\",", " ptr");
-  Write(");", Newline());
+  Write("fprintf(log_file, \"L: %p\\n\",", " ptr);", Newline());
 
-  // TODO
   // If the thing already exists, if it was already clean, increment rechecks
   // Finally, set it to clean
   Write("if (existing) ", OpenBrace());
-  Write("printf(\"Existing!\\n\");", Newline());
+  // Write("printf(\"Existing!\\n\");", Newline());
   Write("if (!existing->dirty ) ", OpenBrace());
   Write("existing->clean_rechecks++;", Newline());
   Write(CloseBrace(), Newline());
   Write("existing->dirty = false;", Newline());
   Write(CloseBrace(), " else ", OpenBrace());
-  Write("printf(\"Not Existing!\\n\");", Newline());
+  // Write("printf(\"Not Existing!\\n\");", Newline());
   // otherwise, if it does not exist, we must make update the values in the map
   Write("MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));", Newline());
   Write("temp->key = ptr;", Newline());
@@ -5253,17 +5256,15 @@ void CWriter::WriteStoreInstrumentation() {
   }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_store_instrumentation(", 
     ModuleInstanceTypeName(), "*instance, uint32_t var)", OpenBrace());
-  Write("void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);", Newline());
+  // Write("void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);", Newline());
+  Write("void *ptr = (void*)((u64)", kGlobalSymbolPrefix, module_prefix_,"_memory(instance) + (u64)var);", Newline());
   Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_,
     "_map_find(ptr);", Newline());
-  Write("printf(\"S: %p\\n\", ptr);" , Newline());
   Write("fprintf(log_file, \"S: %p\\n\", ptr);", Newline());    
 
   Write("if (existing) ", OpenBrace());
-  Write("printf(\"Existing!\\n\");", Newline());
   Write("existing->dirty = true;", Newline());
   Write(CloseBrace(), " else ", OpenBrace());
-  Write("printf(\"Not Existing!\\n\");", Newline());
   // otherwise, new store, just mark as clean and store it
   Write("MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));", Newline());
   Write("temp->key = ptr;", Newline());
