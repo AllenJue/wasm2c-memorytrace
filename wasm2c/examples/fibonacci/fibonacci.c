@@ -197,7 +197,6 @@ static inline void load_data(void* dest, const void* src, size_t n) {
 #define LOAD_DATA(m, o, i, s)            \
   do {                                   \
     RANGE_CHECK((&m), o, s);             \
-    printf("LOAD_DATA\n");               \
     load_data(MEM_ADDR(&m, o, s), i, s); \
   } while (0)
 
@@ -734,49 +733,28 @@ FUNC_TYPE_T(w2c_fibonacci_t2) = "\x07\x80\x96\x7a\x42\xf7\x3e\xe6\x70\x5c\x2f\xa
 FUNC_TYPE_T(w2c_fibonacci_t3) = "\x89\x3a\x3d\x2c\x8f\x4d\x7f\x6d\x6c\x9d\x62\x67\x29\xaf\x3d\x44\x39\x8e\xc3\xf3\xe8\x51\xc1\x99\xb9\xdd\x9f\xd5\x3d\x1f\xd3\xe4";
 
 static FILE* log_file = NULL;
+size_t total_checks = 0;
 
 void wasm2c_fibonacci_file_open() {
   log_file = fopen("fibonacci_log.txt", "w");
 }
-void wasm2c_fibonacci_load_instrumentation(w2c_fibonacci*instance, uint32_t var){
+void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*instance, uint32_t var){
   void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);
   MemoryInfo *existing = wasm2c_fibonacci_map_find(ptr);
-  printf("L: %p\n", ptr);
-  fprintf(log_file, "L: %p\n", ptr);
-  existing = wasm2c_fibonacci_map_find(ptr);
+  total_checks++;
   if (existing) {
-    printf("Existing!\n");
-    if (!existing->dirty ) {
+    if (existing->last_verified == wasm_rt_call_stack_depth - 1) {
       existing->clean_rechecks++;
+    } else {
+      existing->last_verified = wasm_rt_call_stack_depth;
     }
-    existing->dirty = false;
   } else {
-    printf("Not Existing!\n");
     MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));
     temp->key = ptr;
     temp->bounds = 1;
     temp->dirty = false;
     temp->clean_rechecks = 0;
-    wasm2c_fibonacci_map_insert(temp);
-  }
-}
-
-void wasm2c_fibonacci_store_instrumentation(w2c_fibonacci*instance, uint32_t var){
-  void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);
-  MemoryInfo *existing = wasm2c_fibonacci_map_find(ptr);
-  printf("S: %p\n", ptr);
-  fprintf(log_file, "S: %p\n", ptr);
-  existing = wasm2c_fibonacci_map_find(ptr);
-  if (existing) {
-    printf("Existing!\n");
-    existing->dirty = true;
-  } else {
-    printf("Not Existing!\n");
-    MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));
-    temp->key = ptr;
-    temp->bounds = 1;
-    temp->dirty = false;
-    temp->clean_rechecks = 0;
+    temp->last_verified = wasm_rt_call_stack_depth;
     wasm2c_fibonacci_map_insert(temp);
   }
 }
@@ -796,9 +774,11 @@ MemoryInfo *wasm2c_fibonacci_map_find(void *key){
 
 void wasm2c_fibonacci_print_map(){
   MemoryInfo *m;
-  for(m = map; m != NULL; m = m->hh.next){
-    printf("key: %p, clean_rechecks: %ld, bounds: %ld\n",     m->key, m->clean_rechecks, m->bounds);
+  size_t total_rechecks = 0;for(m = map; m != NULL; m = m->hh.next){
+    fprintf(log_file, "key: %p, clean_rechecks: %ld, bounds: %ld\n",     m->key, m->clean_rechecks, m->bounds);
+    total_rechecks += m->clean_rechecks;
   }
+  fprintf(log_file, "clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf\n",    total_rechecks, total_checks, ((double)total_rechecks) / total_checks);
 }
 
 static void init_memories(w2c_fibonacci* instance) {
@@ -911,8 +891,8 @@ u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
   var_i0 = var_p0;
   var_i1 = 4u;
   var_i0 *= var_i1;
-  wasm2c_fibonacci_load_instrumentation(instance, var_i0);
   var_i0 = i32_load(instance->w2c_host_mem, (u64)(var_i0));
+  wasm2c_fibonacci_mem_instrumentation(instance, var_i0);
   var_l1 = var_i0;
   var_i0 = var_l1;
   var_i1 = 0u;
@@ -935,8 +915,8 @@ u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
   var_i1 = 4u;
   var_i0 *= var_i1;
   var_i1 = var_l1;
-  wasm2c_fibonacci_store_instrumentation(instance, var_i0);
   i32_store(instance->w2c_host_mem, (u64)(var_i0), var_i1);
+  wasm2c_fibonacci_mem_instrumentation(instance, var_i0);
   var_i0 = var_l1;
   goto var_Bfunc;
   var_Bfunc:;

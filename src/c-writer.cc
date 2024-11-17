@@ -2164,6 +2164,7 @@ void CWriter::WriteFileDecl() {
     return;
   }
   Write("static FILE* log_file = NULL;", Newline());
+  Write("size_t total_checks = 0;", Newline());
   Write(Newline());
 }
 
@@ -2226,10 +2227,18 @@ void CWriter::WriteMemoryInfoFuncs() {
   // write method for printing out all MemoryInfo map
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_print_map()", OpenBrace());
   Write("MemoryInfo *m;", Newline());
+  Write("size_t total_rechecks = 0;");
   Write("for(m = map; m != NULL; m = m->hh.next)", OpenBrace());
-  Write("printf(\"key: %p, clean_rechecks: %ld, bounds: %ld\\n\", \
-    m->key, m->clean_rechecks, m->bounds);", Newline());
+  // Write("printf(\"key: %p, clean_rechecks: %ld, bounds: %ld\\n\", \
+  //   m->key, m->clean_rechecks, m->bounds);", Newline());
+  Write("fprintf(log_file, \"key: %p, clean_rechecks: %ld\\n\", \
+    m->key, m->clean_rechecks);", Newline());
+  Write("total_rechecks += m->clean_rechecks;", Newline());
+
   Write(CloseBrace(), Newline());
+
+  Write("fprintf(log_file, \"clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf\\n\",\
+    total_rechecks, total_checks, ((double)total_rechecks) / total_checks);", Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
 }
@@ -2241,9 +2250,10 @@ void CWriter::WriteMemoryInfoFuncsDecls() {
   // Write the MemoryInfo Struct
   Write("typedef struct MemoryInfo", OpenBrace());
   Write("void *key;", Newline());
-  Write("size_t bounds;", Newline()); // this will be the bounds. 
+  // Write("size_t bounds;", Newline()); // this will be the bounds. 
   Write("bool dirty;", Newline());
   Write("size_t clean_rechecks;", Newline());
+  Write("size_t last_verified;", Newline());
   Write("UT_hash_handle hh; /* makes this structure hashable */", Newline());
 
   Write(CloseBrace(), " MemoryInfo;", Newline());
@@ -5144,34 +5154,38 @@ void CWriter::WriteMemInstrumentationDecls() {
 }
 
 void CWriter::WriteMemInstrumentation() {
-  if(!s_trace) {
+  if (!s_trace) {
     return;
   }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(", 
     ModuleInstanceTypeName(), "*instance, uint32_t var)", OpenBrace());
-  Write("void *ptr = (void*)((u64)", kGlobalSymbolPrefix, module_prefix_,"_memory(instance) + (u64)var);", Newline());
-  Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_,
-  "_map_find(ptr);", Newline()); 
-  Write("fprintf(log_file, \"L: %p\\n\",", " ptr);", Newline());
+  Write("void *ptr = (void*)((u64)", kGlobalSymbolPrefix, module_prefix_, "_memory(instance) + (u64)var);", Newline());
+  Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_, "_map_find(ptr);", Newline());
+  // Write("printf(\"Call depth: %ld\\n\", wasm_rt_call_stack_depth);", Newline());
+  Write("total_checks++;", Newline());
 
-  // If the thing already exists, if it was already clean, increment rechecks
-  // Finally, set it to clean
+  // If the memory is already tracked
   Write("if (existing) ", OpenBrace());
-  // Write("printf(\"Existing!\\n\");", Newline());
+  // Check if it was last verified at wasm_rt_call_stack_depth - 1
+  Write("if (existing->last_verified == wasm_rt_call_stack_depth - 1) ", OpenBrace());
+  Write("existing->clean_rechecks++;", Newline());
   Write(CloseBrace(), " else ", OpenBrace());
-  // Write("printf(\"Not Existing!\\n\");", Newline());
-  // otherwise, if it does not exist, we must make update the values in the map
+  Write("existing->last_verified = wasm_rt_call_stack_depth;", Newline());
+  Write(CloseBrace(), Newline());
+  Write(CloseBrace(), " else ", OpenBrace()); 
+  // Allocate and initialize a new MemoryInfo structure
   Write("MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));", Newline());
   Write("temp->key = ptr;", Newline());
-  Write("temp->bounds = 1;", Newline()); // TODO find bounds
+  // Write("temp->bounds = 1;", Newline()); // TODO: Dynamically determine bounds
   Write("temp->dirty = false;", Newline());
   Write("temp->clean_rechecks = 0;", Newline());
-  Write(kAdminSymbolPrefix, module_prefix_, 
-  "_map_insert(temp);", Newline());
+  Write("temp->last_verified = wasm_rt_call_stack_depth;", Newline()); 
+  Write(kAdminSymbolPrefix, module_prefix_, "_map_insert(temp);", Newline());
   Write(CloseBrace(), Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
 }
+
 
 void CWriter::Write(const LoadExpr& expr) {
   std::string func;

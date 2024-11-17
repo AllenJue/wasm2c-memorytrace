@@ -260,8 +260,8 @@ int main(int argc, char const* argv[]) {
   wasm2c_dhrystone_free(&dhrystone);
 
   uvwasi_destroy(&local_uvwasi_state);
-  wasm2c_dhrystone_file_close();
   wasm2c_dhrystone_print_map(); 
+  wasm2c_dhrystone_file_close();
   wasm_rt_free();
 
   return 0;

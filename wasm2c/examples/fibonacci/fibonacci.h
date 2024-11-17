@@ -39,13 +39,14 @@ void wasm2c_fibonacci_instantiate(w2c_fibonacci*, struct w2c_host*);
 void wasm2c_fibonacci_free(w2c_fibonacci*);
 void wasm2c_fibonacci_file_open();
 void wasm2c_fibonacci_file_close();
-void wasm2c_fibonacci_load_instrumentation(w2c_fibonacci*, uint32_t);
-void wasm2c_fibonacci_store_instrumentation(w2c_fibonacci*, uint32_t);
+wasm_rt_memory_t* wasm2c_fibonacci(w2c_fibonacci* instance);
+void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*, uint32_t);
 typedef struct MemoryInfo{
   void *key;
   size_t bounds;
   bool dirty;
   size_t clean_rechecks;
+  size_t last_verified;
   UT_hash_handle hh; /* makes this structure hashable */
 } MemoryInfo;
 // Memory Info Func Decls
