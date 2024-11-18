@@ -59,6 +59,7 @@ int main(int argc, char** argv) {
 
   /* Free the rot13 module. */
   wasm2c_rot13_free(&rot13);
+  wasm2c_rot13_print_map();
   wasm2c_rot13_file_close();
   /* Free the Wasm runtime state. */
   wasm_rt_free();

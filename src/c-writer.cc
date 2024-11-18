@@ -5149,7 +5149,7 @@ void CWriter::WriteMemInstrumentationDecls() {
   Write("wasm_rt_memory_t* ", kAdminSymbolPrefix, module_prefix_, "(", kGlobalSymbolPrefix, 
     module_prefix_, "* instance);", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(", 
-    ModuleInstanceTypeName(), "*, uint32_t);");
+    ModuleInstanceTypeName(), "*, u64);");
   Write(Newline());
 }
 
@@ -5158,7 +5158,7 @@ void CWriter::WriteMemInstrumentation() {
     return;
   }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(", 
-    ModuleInstanceTypeName(), "*instance, uint32_t var)", OpenBrace());
+    ModuleInstanceTypeName(), "*instance, u64 var)", OpenBrace());
   Write("void *ptr = (void*)((u64)", kGlobalSymbolPrefix, module_prefix_, "_memory(instance) + (u64)var);", Newline());
   Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_, "_map_find(ptr);", Newline());
   // Write("printf(\"Call depth: %ld\\n\", wasm_rt_call_stack_depth);", Newline());
