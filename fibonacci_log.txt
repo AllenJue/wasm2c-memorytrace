@@ -1,17 +1,8 @@
-key: 0x7fffe29b2270, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b2278, clean_rechecks: 2, bounds: 1
-key: 0x7fffe29b2271, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b227c, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b2272, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b2280, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b2273, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b2284, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b2275, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b2288, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b228c, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b227d, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b2290, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b2285, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b2294, clean_rechecks: 0, bounds: 1
-key: 0x7fffe29b2292, clean_rechecks: 0, bounds: 1
-clean_rechecks: 2, total checks: 30, percentage repeated: 0.066667
+key: 0x7ffffc607d10, clean_rechecks: 0, bounds: 1
+key: 0x7ffffc607d18, clean_rechecks: 0, bounds: 1
+key: 0x7ffffc607d11, clean_rechecks: 0, bounds: 1
+key: 0x7ffffc607d1c, clean_rechecks: 0, bounds: 1
+key: 0x7ffffc607d12, clean_rechecks: 0, bounds: 1
+key: 0x7ffffc607d20, clean_rechecks: 0, bounds: 1
+key: 0x7ffffc607d13, clean_rechecks: 0, bounds: 1
+clean_rechecks: 0, total checks: 10, percentage repeated: 0.000000

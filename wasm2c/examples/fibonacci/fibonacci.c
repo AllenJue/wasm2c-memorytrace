@@ -822,6 +822,7 @@ void wasm2c_fibonacci_instantiate(w2c_fibonacci* instance, struct w2c_host* w2c_
 #endif
 }
 void wasm2c_fibonacci_file_close() {
+  // printf("%s\n", __func__);
   fclose(log_file);
 }
 
