@@ -2247,16 +2247,21 @@ void CWriter::WriteMemoryInfoFuncsDecls() {
   if(!s_trace) {
     return;
   }
+  // create call stack node to help verify when a function is being called
+  Write("typedef struct CallStackNode", OpenBrace());
+  Write("char *function;", Newline());
+  Write("struct CallStackNode *next;", Newline());
+  Write(CloseBrace(), " CallStackNode;", Newline());
+  Write(Newline());
   // Write the MemoryInfo Struct
   Write("typedef struct MemoryInfo", OpenBrace());
   Write("void *key;", Newline());
-  // Write("size_t bounds;", Newline()); // this will be the bounds. 
   Write("bool dirty;", Newline());
   Write("size_t clean_rechecks;", Newline());
-  Write("size_t last_verified;", Newline());
+  Write("CallStackNode *head;", Newline());
   Write("UT_hash_handle hh; /* makes this structure hashable */", Newline());
-
   Write(CloseBrace(), " MemoryInfo;", Newline());
+  Write(Newline());
 
   Write("// Memory Info Func Decls", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, 
@@ -5149,7 +5154,7 @@ void CWriter::WriteMemInstrumentationDecls() {
   Write("wasm_rt_memory_t* ", kAdminSymbolPrefix, module_prefix_, "(", kGlobalSymbolPrefix, 
     module_prefix_, "* instance);", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(", 
-    ModuleInstanceTypeName(), "*, u64);");
+    ModuleInstanceTypeName(), "*, u64, const char *);");
   Write(Newline());
 }
 
@@ -5158,7 +5163,7 @@ void CWriter::WriteMemInstrumentation() {
     return;
   }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(", 
-    ModuleInstanceTypeName(), "*instance, u64 var)", OpenBrace());
+    ModuleInstanceTypeName(), "*instance, u64 var, const char *caller)", OpenBrace());
   Write("void *ptr = (void*)((u64)", kGlobalSymbolPrefix, module_prefix_, "_memory(instance) + (u64)var);", Newline());
   Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_, "_map_find(ptr);", Newline());
   // Write("printf(\"Call depth: %ld\\n\", wasm_rt_call_stack_depth);", Newline());
@@ -5167,10 +5172,14 @@ void CWriter::WriteMemInstrumentation() {
   // If the memory is already tracked
   Write("if (existing) ", OpenBrace());
   // Check if it was last verified at wasm_rt_call_stack_depth - 1
-  Write("if (existing->last_verified == wasm_rt_call_stack_depth - 1) ", OpenBrace());
+  // Write("if (existing->last_verified == wasm_rt_call_stack_depth - 1) ", OpenBrace());
+  Write("printf(\"Caller: %s, Callee: %s\\n\", caller, __func__);", Newline());
+  Write("if (true) ", OpenBrace());
   Write("existing->clean_rechecks++;", Newline());
   Write(CloseBrace(), " else ", OpenBrace());
-  Write("existing->last_verified = wasm_rt_call_stack_depth;", Newline());
+  // Write("existing->last_verified = wasm_rt_call_stack_depth;", Newline());
+  Write("// TODO", Newline());
+
   Write(CloseBrace(), Newline());
   Write(CloseBrace(), " else ", OpenBrace()); 
   // Allocate and initialize a new MemoryInfo structure
@@ -5179,7 +5188,6 @@ void CWriter::WriteMemInstrumentation() {
   // Write("temp->bounds = 1;", Newline()); // TODO: Dynamically determine bounds
   Write("temp->dirty = false;", Newline());
   Write("temp->clean_rechecks = 0;", Newline());
-  Write("temp->last_verified = wasm_rt_call_stack_depth;", Newline()); 
   Write(kAdminSymbolPrefix, module_prefix_, "_map_insert(temp);", Newline());
   Write(CloseBrace(), Newline());
   Write(CloseBrace(), Newline());
@@ -5235,7 +5243,7 @@ void CWriter::Write(const LoadExpr& expr) {
 
   if (s_trace) {
     Write(kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(instance, ", StackVar(0),
-      ");", Newline());
+      ", __func__);", Newline());
   }
 
   DropTypes(1);
@@ -5273,7 +5281,7 @@ void CWriter::Write(const StoreExpr& expr) {
   Write(", ", StackVar(0), ");", Newline());
   if (s_trace) {
     Write(kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(instance, ", StackVar(1),
-      ");", Newline());
+      ", __func__);", Newline());
   }
   DropTypes(2);
 }

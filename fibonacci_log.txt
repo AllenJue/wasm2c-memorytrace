@@ -1,8 +1,8 @@
-key: 0x7ffffc607d10, clean_rechecks: 0, bounds: 1
-key: 0x7ffffc607d18, clean_rechecks: 0, bounds: 1
-key: 0x7ffffc607d11, clean_rechecks: 0, bounds: 1
-key: 0x7ffffc607d1c, clean_rechecks: 0, bounds: 1
-key: 0x7ffffc607d12, clean_rechecks: 0, bounds: 1
-key: 0x7ffffc607d20, clean_rechecks: 0, bounds: 1
-key: 0x7ffffc607d13, clean_rechecks: 0, bounds: 1
-clean_rechecks: 0, total checks: 10, percentage repeated: 0.000000
+key: 0x7ffd9f5850e0, clean_rechecks: 2
+key: 0x7ffd9f5850e8, clean_rechecks: 0
+key: 0x7ffd9f5850e1, clean_rechecks: 1
+key: 0x7ffd9f5850ec, clean_rechecks: 0
+key: 0x7ffd9f5850e2, clean_rechecks: 0
+key: 0x7ffd9f5850f0, clean_rechecks: 0
+key: 0x7ffd9f5850e3, clean_rechecks: 0
+clean_rechecks: 3, total checks: 10, percentage repeated: 0.300000

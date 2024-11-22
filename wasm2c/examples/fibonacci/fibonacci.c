@@ -738,23 +738,23 @@ size_t total_checks = 0;
 void wasm2c_fibonacci_file_open() {
   log_file = fopen("fibonacci_log.txt", "w");
 }
-void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*instance, uint32_t var){
+void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*instance, u64 var, const char *caller){
   void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);
   MemoryInfo *existing = wasm2c_fibonacci_map_find(ptr);
   total_checks++;
+  printf("Caller: %s, Callee: %s\n", caller, __func__);
+
   if (existing) {
-    if (existing->last_verified == wasm_rt_call_stack_depth - 1) {
+    if (true) {
       existing->clean_rechecks++;
     } else {
-      existing->last_verified = wasm_rt_call_stack_depth;
+      // TODO
     }
   } else {
     MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));
     temp->key = ptr;
-    temp->bounds = 1;
     temp->dirty = false;
     temp->clean_rechecks = 0;
-    temp->last_verified = wasm_rt_call_stack_depth;
     wasm2c_fibonacci_map_insert(temp);
   }
 }
@@ -775,7 +775,7 @@ MemoryInfo *wasm2c_fibonacci_map_find(void *key){
 void wasm2c_fibonacci_print_map(){
   MemoryInfo *m;
   size_t total_rechecks = 0;for(m = map; m != NULL; m = m->hh.next){
-    fprintf(log_file, "key: %p, clean_rechecks: %ld, bounds: %ld\n",     m->key, m->clean_rechecks, m->bounds);
+    fprintf(log_file, "key: %p, clean_rechecks: %ld\n",     m->key, m->clean_rechecks);
     total_rechecks += m->clean_rechecks;
   }
   fprintf(log_file, "clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf\n",    total_rechecks, total_checks, ((double)total_rechecks) / total_checks);
@@ -822,7 +822,6 @@ void wasm2c_fibonacci_instantiate(w2c_fibonacci* instance, struct w2c_host* w2c_
 #endif
 }
 void wasm2c_fibonacci_file_close() {
-  // printf("%s\n", __func__);
   fclose(log_file);
 }
 
@@ -893,7 +892,7 @@ u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
   var_i1 = 4u;
   var_i0 *= var_i1;
   var_i0 = i32_load(instance->w2c_host_mem, (u64)(var_i0));
-  wasm2c_fibonacci_mem_instrumentation(instance, var_i0);
+  wasm2c_fibonacci_mem_instrumentation(instance, var_i0, __func__);
   var_l1 = var_i0;
   var_i0 = var_l1;
   var_i1 = 0u;
@@ -917,7 +916,7 @@ u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
   var_i0 *= var_i1;
   var_i1 = var_l1;
   i32_store(instance->w2c_host_mem, (u64)(var_i0), var_i1);
-  wasm2c_fibonacci_mem_instrumentation(instance, var_i0);
+  wasm2c_fibonacci_mem_instrumentation(instance, var_i0, __func__);
   var_i0 = var_l1;
   goto var_Bfunc;
   var_Bfunc:;

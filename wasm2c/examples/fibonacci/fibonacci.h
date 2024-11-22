@@ -40,15 +40,20 @@ void wasm2c_fibonacci_free(w2c_fibonacci*);
 void wasm2c_fibonacci_file_open();
 void wasm2c_fibonacci_file_close();
 wasm_rt_memory_t* wasm2c_fibonacci(w2c_fibonacci* instance);
-void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*, uint32_t);
+void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*, u64, const char *);
+typedef struct CallStackNode{
+  char *function;
+  struct CallStackNode *next;
+} CallStackNode;
+
 typedef struct MemoryInfo{
   void *key;
-  size_t bounds;
   bool dirty;
   size_t clean_rechecks;
-  size_t last_verified;
+  CallStackNode *head;
   UT_hash_handle hh; /* makes this structure hashable */
 } MemoryInfo;
+
 // Memory Info Func Decls
 void wasm2c_fibonacci_map_insert(MemoryInfo *memInfo);
 MemoryInfo *wasm2c_fibonacci_map_find(void *key);
