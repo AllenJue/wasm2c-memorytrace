@@ -738,13 +738,73 @@ size_t total_checks = 0;
 void wasm2c_fibonacci_file_open() {
   log_file = fopen("fibonacci_log.txt", "w");
 }
+void wasm2c_fibonacci_add_callee(FunctionNode** graph, const char* caller, const char* callee) {
+  FunctionNode *fn;
+  HASH_FIND_STR(*graph, caller, fn);
+  if (!fn) {
+    fn = malloc(sizeof(FunctionNode));
+    fn->caller = strdup(caller);
+    fn->callees = NULL;
+    HASH_ADD_KEYPTR(hh, *graph, fn->caller, strlen(fn->caller), fn);
+  }
+  CalleeNode *new_callee = malloc(sizeof(CalleeNode));
+  new_callee->callee = strdup(callee);
+  new_callee->next = fn->callees;
+  fn->callees = new_callee;
+}
+void wasm2c_fibonacci_parse_line(FunctionNode** graph, char* line) {
+  char* colon = strchr(line, ':');
+  if (!colon){
+    return;
+  }
+  *colon = '\0';  // Null-terminate the caller
+  char* caller = line;
+  char* callees = colon + 1;
+  while (*callees == ' '){
+    callees++;
+  }
+  char* callee = strtok(callees, ", ");
+  while (callee) {
+    wasm2c_fibonacci_add_callee(graph, caller, callee);
+    callee = strtok(NULL, ", ");
+  }
+}
+void wasm2c_fibonacci_free_graph(FunctionNode*graph) {
+  FunctionNode *current, *tmp;
+  HASH_ITER(hh, graph, current, tmp) {
+    CalleeNode *callee = current->callees;
+    while (callee) {
+      CalleeNode *temp = callee;
+      callee = callee->next;
+      free(temp->callee);
+      free(temp);
+    }
+    HASH_DEL(graph, current);
+    free(current->caller);
+    free(current);
+  }
+}
+void wasm2c_fibonacci_print_graph(FunctionNode* graph) {
+  printf("Printing out call graph: \n");
+  FunctionNode* fn;
+  for (fn = graph; fn != NULL; fn = fn->hh.next) {
+    printf("%s:", fn->caller);
+    CalleeNode* callee = fn->callees;
+    while (callee) {
+      printf(" %s", callee->callee);
+      if (callee->next) printf(",");
+      callee = callee->next;
+    }
+    printf("\n");
+  }
+}
+
 void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*instance, u64 var, const char *caller){
   void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);
   MemoryInfo *existing = wasm2c_fibonacci_map_find(ptr);
   total_checks++;
-  printf("Caller: %s, Callee: %s\n", caller, __func__);
-
   if (existing) {
+    printf("Caller: %s, Callee: %s\n", caller, __func__);
     if (true) {
       existing->clean_rechecks++;
     } else {
@@ -753,7 +813,6 @@ void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*instance, u64 var, const
   } else {
     MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));
     temp->key = ptr;
-    temp->dirty = false;
     temp->clean_rechecks = 0;
     wasm2c_fibonacci_map_insert(temp);
   }

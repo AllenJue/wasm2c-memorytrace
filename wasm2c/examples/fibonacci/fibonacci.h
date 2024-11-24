@@ -39,18 +39,23 @@ void wasm2c_fibonacci_instantiate(w2c_fibonacci*, struct w2c_host*);
 void wasm2c_fibonacci_free(w2c_fibonacci*);
 void wasm2c_fibonacci_file_open();
 void wasm2c_fibonacci_file_close();
+typedef struct CalleeNode{
+  char * callee;
+  struct CalleeNode *next;
+} CalleeNode;
+typedef struct FunctionNode{
+  char *caller;
+  CalleeNode *callees;
+  UT_hash_handle hh;
+} FunctionNode;
+extern FunctionNode* graph;
+
+void wasm2c_fibonacci_add_callee(FunctionNode**, const char*, const char*);void wasm2c_fibonacci_parse_line(FunctionNode**, char*);void wasm2c_fibonacci_free_graph(FunctionNode*);void wasm2c_fibonacci_print_graph(FunctionNode*);
 wasm_rt_memory_t* wasm2c_fibonacci(w2c_fibonacci* instance);
 void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*, u64, const char *);
-typedef struct CallStackNode{
-  char *function;
-  struct CallStackNode *next;
-} CallStackNode;
-
 typedef struct MemoryInfo{
   void *key;
-  bool dirty;
   size_t clean_rechecks;
-  CallStackNode *head;
   UT_hash_handle hh; /* makes this structure hashable */
 } MemoryInfo;
 

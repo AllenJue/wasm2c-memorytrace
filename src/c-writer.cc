@@ -400,6 +400,10 @@ class CWriter {
   void WriteDataInstances();
   void WriteElemInstances();
   void WriteGlobalInitializers();
+  // create call graph declarations
+  void WriteCallGraphDecls();
+  void WriteCallGraphFuncsDecls();
+  void WriteCallGraphFuncs();
   // create file declarations
   void WriteFileDecl();
   void WriteFileOpenDecls();
@@ -1343,6 +1347,105 @@ void CWriter::Write(const Const& const_) {
   }
 }
 
+void CWriter::WriteCallGraphDecls() {
+  // Create CalleeNode struct
+  Write("typedef struct CalleeNode", OpenBrace());
+  Write("char * callee;", Newline());
+  Write("struct CalleeNode *next;", Newline());
+  Write(CloseBrace(), " CalleeNode;", Newline());
+  // Create FunctionNode struct, which has a LinkedList of callee
+  Write("typedef struct FunctionNode", OpenBrace());
+  Write("char *caller;", Newline());
+  Write("CalleeNode *callees;", Newline());
+  Write("UT_hash_handle hh;", Newline());
+  Write(CloseBrace(), " FunctionNode;", Newline());
+  // Declare extern graph, which will be initialized in the module code
+  Write("extern FunctionNode* graph;", Newline());
+  Write(Newline());
+}
+
+void CWriter::WriteCallGraphFuncsDecls() {
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_add_callee(FunctionNode**, const char*, const char*);");
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_parse_line(FunctionNode**, char*);");
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_free_graph(FunctionNode*);");
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_print_graph(FunctionNode*);");
+  Write(Newline());
+}
+
+void CWriter::WriteCallGraphFuncs() {
+  // add a single caller-callee edge
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_add_callee(FunctionNode** graph, const char* caller, const char* callee) ", OpenBrace());
+  Write("FunctionNode *fn;", Newline());
+  Write("HASH_FIND_STR(*graph, caller, fn);", Newline());
+  Write("if (!fn) ", OpenBrace());
+    Write("fn = malloc(sizeof(FunctionNode));", Newline());
+    Write("fn->caller = strdup(caller);", Newline());
+    Write("fn->callees = NULL;", Newline());
+    Write("HASH_ADD_KEYPTR(hh, *graph, fn->caller, strlen(fn->caller), fn);", Newline());
+  Write(CloseBrace(), Newline());
+  Write("CalleeNode *new_callee = malloc(sizeof(CalleeNode));", Newline());
+  Write("new_callee->callee = strdup(callee);", Newline());
+  Write("new_callee->next = fn->callees;", Newline());
+  Write("fn->callees = new_callee;", Newline());
+  Write(CloseBrace(), Newline());
+
+  // parse an individual line from a call graph parsed from cflow
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_parse_line(FunctionNode** graph, char* line) ", OpenBrace());
+  Write("char* colon = strchr(line, ':');", Newline());
+  Write("if (!colon)", OpenBrace());
+  Write("return;", Newline());
+  Write(CloseBrace(), Newline());
+  Write("*colon = '\\0';  // Null-terminate the caller", Newline());
+  Write("char* caller = line;", Newline());
+  Write("char* callees = colon + 1;", Newline());
+  Write("while (*callees == ' ')", OpenBrace());
+  Write("callees++;", Newline());
+  Write(CloseBrace(), Newline());
+  Write("char* callee = strtok(callees, \", \");", Newline());
+  Write("while (callee) ", OpenBrace());
+  Write(kAdminSymbolPrefix, module_prefix_, "_add_callee(graph, caller, callee);", Newline());
+  Write("callee = strtok(NULL, \", \");", Newline());
+  Write(CloseBrace(), Newline());
+  Write(CloseBrace(), Newline());
+
+  // free graph memory when done
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_free_graph(FunctionNode*graph) ", OpenBrace());
+  Write("FunctionNode *current, *tmp;", Newline());
+  Write("HASH_ITER(hh, graph, current, tmp) ", OpenBrace());
+  // go through each FunctionNode, and free call of the callees
+  Write("CalleeNode *callee = current->callees;", Newline());
+  Write("while (callee) ", OpenBrace());
+  Write("CalleeNode *temp = callee;", Newline());
+  Write("callee = callee->next;", Newline());
+  Write("free(temp->callee);", Newline());
+  Write("free(temp);", Newline());
+  Write(CloseBrace(), Newline());
+  // once all callees freed, free the caller
+  Write("HASH_DEL(graph, current);", Newline());
+  Write("free(current->caller);", Newline());
+  Write("free(current);", Newline());
+  Write(CloseBrace(), Newline());
+  Write(CloseBrace(), Newline());
+
+  // print graph for a call graph
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_print_graph(FunctionNode* graph) ", OpenBrace());
+  Write("printf(\"Printing out call graph: \\n\");", Newline());
+  Write("FunctionNode* fn;", Newline());
+  Write("for (fn = graph; fn != NULL; fn = fn->hh.next) ", OpenBrace());
+  Write("printf(\"%s:\", fn->caller);", Newline());
+  Write("CalleeNode* callee = fn->callees;", Newline());
+  Write("while (callee) ", OpenBrace());
+  Write("printf(\" %s\", callee->callee);", Newline());
+  Write("if (callee->next) printf(\",\");", Newline());
+  Write("callee = callee->next;", Newline());
+  Write(CloseBrace(), Newline());
+  Write("printf(\"\\n\");", Newline());
+  Write(CloseBrace(), Newline());
+  Write(CloseBrace(), Newline());
+  Write(Newline());
+
+}
+
 void CWriter::WriteFileOpenDecls() {
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_open();");
   Write(Newline());
@@ -2248,17 +2351,15 @@ void CWriter::WriteMemoryInfoFuncsDecls() {
     return;
   }
   // create call stack node to help verify when a function is being called
-  Write("typedef struct CallStackNode", OpenBrace());
-  Write("char *function;", Newline());
-  Write("struct CallStackNode *next;", Newline());
-  Write(CloseBrace(), " CallStackNode;", Newline());
-  Write(Newline());
+  // Write("typedef struct CallStackNode", OpenBrace());
+  // Write("char *function;", Newline());
+  // Write("struct CallStackNode *next;", Newline());
+  // Write(CloseBrace(), " CallStackNode;", Newline());
+  // Write(Newline());
   // Write the MemoryInfo Struct
   Write("typedef struct MemoryInfo", OpenBrace());
   Write("void *key;", Newline());
-  Write("bool dirty;", Newline());
   Write("size_t clean_rechecks;", Newline());
-  Write("CallStackNode *head;", Newline());
   Write("UT_hash_handle hh; /* makes this structure hashable */", Newline());
   Write(CloseBrace(), " MemoryInfo;", Newline());
   Write(Newline());
@@ -5186,7 +5287,6 @@ void CWriter::WriteMemInstrumentation() {
   Write("MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));", Newline());
   Write("temp->key = ptr;", Newline());
   // Write("temp->bounds = 1;", Newline()); // TODO: Dynamically determine bounds
-  Write("temp->dirty = false;", Newline());
   Write("temp->clean_rechecks = 0;", Newline());
   Write(kAdminSymbolPrefix, module_prefix_, "_map_insert(temp);", Newline());
   Write(CloseBrace(), Newline());
@@ -6028,6 +6128,8 @@ void CWriter::WriteCHeader() {
   // Logging stuff here
   WriteFileOpenDecls();
   WriteFileCloseDecls();
+  WriteCallGraphDecls();
+  WriteCallGraphFuncsDecls();
   WriteMemInstrumentationDecls();
   WriteMemoryInfoFuncsDecls();
   WriteGetFuncTypeDecl();
@@ -6068,6 +6170,7 @@ void CWriter::WriteCSource() {
   WriteGlobalInitializers();
   WriteFileDecl();
   WriteFileOpen();
+  WriteCallGraphFuncs();
   WriteMemInstrumentation();
   WriteMemoryInfoDecl();
   WriteMemoryInfoFuncs();

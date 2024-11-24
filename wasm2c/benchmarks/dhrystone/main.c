@@ -250,6 +250,32 @@ int main(int argc, char const* argv[]) {
     exit(1);
   }
 
+  /* Make sure there is at least one command-line argument. */
+  if (argc < 2) {
+    printf("Invalid argument. Expected '%s WORD...'\n", argv[0]);
+    return 1;
+  }
+
+  FILE* file = fopen(argv[1], "r");
+  if (!file) {
+      perror("Error opening file");
+      return 1;
+  }
+
+  FunctionNode* graph = NULL;
+  char line[256];
+
+  // Read and process each line
+  while (fgets(line, sizeof(line), file)) {
+      // Remove trailing newline
+      line[strcspn(line, "\n")] = '\0';
+      wasm2c_dhrystone_parse_line(&graph, line);
+  }
+
+  fclose(file);
+
+  wasm2c_dhrystone_print_graph(graph);
+
   wasi.w2c_memory = &dhrystone.w2c_memory;
   wasi.uvwasi = &local_uvwasi_state,
 
@@ -262,6 +288,7 @@ int main(int argc, char const* argv[]) {
   uvwasi_destroy(&local_uvwasi_state);
   wasm2c_dhrystone_print_map(); 
   wasm2c_dhrystone_file_close();
+  wasm2c_dhrystone_free_graph(graph);
   wasm_rt_free();
 
   return 0;
