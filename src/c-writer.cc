@@ -3394,7 +3394,18 @@ void CWriter::Write(const Func& func) {
   ResetTypeStack(0);
   PushTypes(func.decl.sig.result_types);
   Write("FUNC_EPILOGUE;", Newline());
-
+  if(s_trace) {
+    Write("printf(\"Function returning: %s\\n\", __func__);", Newline());
+    Write("while (call_stack->top && strcmp(call_stack->top->caller, __func__) == 0)", OpenBrace());
+    Write("StackNode *temp = ", kAdminSymbolPrefix, module_prefix_, "_pop_stack(call_stack);", Newline());
+    Write("MemoryInfo *associated_info = wasm2c_fibonacci_map_find(temp->key);", Newline());
+    Write("if (associated_info)", OpenBrace());
+    Write("associated_info->last_verified = strdup(temp->prev_caller);", Newline());
+    Write(CloseBrace(), Newline());
+    Write(kAdminSymbolPrefix, module_prefix_, "_free_stack_node(temp);", Newline()); 
+    Write(CloseBrace(), Newline());
+  }
+  
   // Return the top of the stack implicitly.
   Index num_results = func.GetNumResults();
   if (num_results == 1) {

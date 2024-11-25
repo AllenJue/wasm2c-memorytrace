@@ -1064,6 +1064,15 @@ u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
   goto var_Bfunc;
   var_Bfunc:;
   FUNC_EPILOGUE;
+  printf("Function returning: %s\n", __func__);
+  while (call_stack->top && strcmp(call_stack->top->caller, __func__) == 0){
+    StackNode *temp = wasm2c_fibonacci_pop_stack(call_stack);
+    MemoryInfo *associated_info = wasm2c_fibonacci_map_find(temp->key);
+    if (associated_info){
+      associated_info->last_verified = strdup(temp->prev_caller);
+    }
+    wasm2c_fibonacci_free_stack_node(temp);
+  }
   return var_i0;
 }
 
@@ -1107,4 +1116,13 @@ void w2c_fibonacci_fibonacci_loop_0(w2c_fibonacci* instance, u32 var_p0) {
   goto var_Bfunc;
   var_Bfunc:;
   FUNC_EPILOGUE;
+  printf("Function returning: %s\n", __func__);
+  while (call_stack->top && strcmp(call_stack->top->caller, __func__) == 0){
+    StackNode *temp = wasm2c_fibonacci_pop_stack(call_stack);
+    MemoryInfo *associated_info = wasm2c_fibonacci_map_find(temp->key);
+    if (associated_info){
+      associated_info->last_verified = strdup(temp->prev_caller);
+    }
+    wasm2c_fibonacci_free_stack_node(temp);
+  }
 }
