@@ -752,6 +752,7 @@ void wasm2c_fibonacci_add_callee(FunctionNode** graph, const char* caller, const
   new_callee->next = fn->callees;
   fn->callees = new_callee;
 }
+
 void wasm2c_fibonacci_parse_line(FunctionNode** graph, char* line) {
   char* colon = strchr(line, ':');
   if (!colon){
@@ -769,6 +770,7 @@ void wasm2c_fibonacci_parse_line(FunctionNode** graph, char* line) {
     callee = strtok(NULL, ", ");
   }
 }
+
 void wasm2c_fibonacci_free_graph(FunctionNode*graph) {
   FunctionNode *current, *tmp;
   HASH_ITER(hh, graph, current, tmp) {
@@ -779,11 +781,13 @@ void wasm2c_fibonacci_free_graph(FunctionNode*graph) {
       free(temp->callee);
       free(temp);
     }
+    
     HASH_DEL(graph, current);
     free(current->caller);
     free(current);
   }
 }
+
 void wasm2c_fibonacci_print_graph(FunctionNode* graph) {
   printf("Printing out call graph: \n");
   FunctionNode* fn;
@@ -799,27 +803,107 @@ void wasm2c_fibonacci_print_graph(FunctionNode* graph) {
   }
 }
 
+bool wasm2c_fibonacci_contains_edge(const char *caller, const char *callee) {
+  if (!graph || !caller || !callee) {
+    return false;
+  }
+  FunctionNode *caller_node;
+  HASH_FIND_STR(graph, caller, caller_node);
+  if (!caller_node) {
+    return false; // caller node not found
+  }
+  CalleeNode *current_callee = caller_node->callees;
+  while (current_callee) {
+    if (strcmp(current_callee->callee, callee) == 0) {
+      return true; // found an edge between caller and callee
+    }
+    current_callee = current_callee->next;
+  }
+  return false;
+}
+
+Stack *wasm2c_fibonacci_create_stack() {
+  Stack *stack = (Stack *)malloc(sizeof(Stack));
+  stack->top = NULL; // Top of stack initially empty
+  return stack;
+}
+
+void wasm2c_fibonacci_push_stack(Stack *stack, const char *caller, const char *prev_caller, void *key) {
+  StackNode *new_node = (StackNode *)malloc(sizeof(StackNode));
+  new_node->caller = strdup(caller);
+  new_node->prev_caller = strdup(prev_caller);
+  new_node->key = key;
+  new_node->next = stack->top;
+  stack->top = new_node;
+}
+
+StackNode *wasm2c_fibonacci_pop_stack(Stack *stack) {
+  if (!stack->top) {
+    return NULL;
+  }
+  StackNode *top_node = stack->top;
+  stack->top = stack->top->next;
+  return top_node;
+}
+
+void wasm2c_fibonacci_free_stack_node(StackNode *node){
+  if (!node) {
+    return;
+  }
+  free(node->caller);
+  free(node->prev_caller);
+  free(node);
+}
+
+void wasm2c_fibonacci_destroy_stack(Stack *stack) {
+  StackNode *current = stack->top;
+  while (current) {
+    StackNode *temp = current;
+    current = current->next;
+    wasm2c_fibonacci_free_stack_node(temp);
+  }
+  free(stack);
+}
+
+void wasm2c_fibonacci_print_stack(Stack *stack) {
+  StackNode *current = stack->top;
+  printf("Current stack: \n");
+  printf("----------------------\n");
+  while (current) {
+    printf("Caller: %s, prev_caller: %s, Pointer: %p\n", current->caller, current->prev_caller ? current->prev_caller : "NULL", current->key);
+    current = current->next;
+  }
+  printf("----------------------\n");
+}
+
 void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*instance, u64 var, const char *caller){
   void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);
   MemoryInfo *existing = wasm2c_fibonacci_map_find(ptr);
   total_checks++;
   if (existing) {
     printf("Caller: %s, Callee: %s\n", caller, __func__);
-    if (true) {
+    // If the last verified is the current method or calls the current method
+    if (existing->last_verified && strcmp(existing->last_verified, caller) == 0 || wasm2c_fibonacci_contains_edge(existing->last_verified, caller)) {
       existing->clean_rechecks++;
-    } else {
-      // TODO
+      return;
     }
   } else {
     MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));
     temp->key = ptr;
     temp->clean_rechecks = 0;
+    temp->last_verified = caller;
     wasm2c_fibonacci_map_insert(temp);
   }
+  // Revalidate because there is no relationship in the call graph
+  existing = wasm2c_fibonacci_map_find(ptr);
+  printf("Revalidating memory at %p by %s, prev_caller: %s\n", ptr, caller, existing->last_verified);
+  wasm2c_fibonacci_push_stack(call_stack, existing->last_verified, caller, ptr);
+  wasm2c_fibonacci_print_stack(call_stack);
 }
 
 // Memory Info Decl
 struct MemoryInfo *map = NULL;    /* important! initialize to NULL */
+
 // Memory Info Func
 void wasm2c_fibonacci_map_insert(MemoryInfo *memInfo){
   HASH_ADD_INT(map, key, memInfo);  /* id: name of key field */

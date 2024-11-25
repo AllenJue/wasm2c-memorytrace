@@ -14,6 +14,9 @@ wasm_rt_memory_t* w2c_host_mem(struct w2c_host* instance) {
   return &instance->memory;
 }
 
+FunctionNode* graph = NULL;
+Stack *call_stack = NULL;
+
 int main(int argc, char** argv) {
   /* Make sure there is at least two command-line argument. */
   if (argc < 3) {
@@ -36,7 +39,6 @@ int main(int argc, char** argv) {
       return 1;
   }
 
-  FunctionNode* graph = NULL;
   char line[256];
 
   // Read and process each line
@@ -51,7 +53,10 @@ int main(int argc, char** argv) {
   // Print and clean up the graph
   wasm2c_fibonacci_print_graph(graph);
 
-  // Construct an instance of the `rot13` module, which imports from the host.
+  call_stack = wasm2c_fibonacci_create_stack();
+  wasm2c_fibonacci_print_stack(call_stack);
+
+  // Construct an instance of the `fibonacci` module, which imports from the host.
   w2c_fibonacci fibonnaci;
   wasm2c_fibonacci_instantiate(&fibonnaci, &host);
   wasm2c_fibonacci_file_open();

@@ -40,22 +40,43 @@ void wasm2c_fibonacci_free(w2c_fibonacci*);
 void wasm2c_fibonacci_file_open();
 void wasm2c_fibonacci_file_close();
 typedef struct CalleeNode{
-  char * callee;
+  char *callee;
   struct CalleeNode *next;
 } CalleeNode;
+
 typedef struct FunctionNode{
   char *caller;
   CalleeNode *callees;
   UT_hash_handle hh;
 } FunctionNode;
+
 extern FunctionNode* graph;
 
-void wasm2c_fibonacci_add_callee(FunctionNode**, const char*, const char*);void wasm2c_fibonacci_parse_line(FunctionNode**, char*);void wasm2c_fibonacci_free_graph(FunctionNode*);void wasm2c_fibonacci_print_graph(FunctionNode*);
+void wasm2c_fibonacci_add_callee(FunctionNode**, const char*, const char*);void wasm2c_fibonacci_parse_line(FunctionNode**, char*);void wasm2c_fibonacci_free_graph(FunctionNode*);void wasm2c_fibonacci_print_graph(FunctionNode*);bool wasm2c_fibonacci_contains_edge(const char *, const char *);
+typedef struct StackNode {
+  const char *caller;
+  const char *prev_caller;
+  void *key;
+  struct StackNode *next;
+} StackNode;
+
+typedef struct Stack {
+  StackNode *top;
+} Stack;
+
+extern struct Stack *call_stack;
+Stack *wasm2c_fibonacci_create_stack();
+void wasm2c_fibonacci_push_stack(Stack *, const char *, const char *, void *);
+StackNode *wasm2c_fibonacci_pop_stack(Stack *);
+void wasm2c_fibonacci_free_stack_node(StackNode *);
+void wasm2c_fibonacci_destroy_stack(Stack *);
+void wasm2c_fibonacci_print_stack(Stack *);
 wasm_rt_memory_t* wasm2c_fibonacci(w2c_fibonacci* instance);
 void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*, u64, const char *);
 typedef struct MemoryInfo{
   void *key;
   size_t clean_rechecks;
+  const char *last_verified;
   UT_hash_handle hh; /* makes this structure hashable */
 } MemoryInfo;
 

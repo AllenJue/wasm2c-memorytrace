@@ -404,6 +404,10 @@ class CWriter {
   void WriteCallGraphDecls();
   void WriteCallGraphFuncsDecls();
   void WriteCallGraphFuncs();
+  // create call stack decleations
+  void WriteCallStackDecls();
+  void WriteCallStackFuncsDecls();
+  void WriteCallStackFuncs();
   // create file declarations
   void WriteFileDecl();
   void WriteFileOpenDecls();
@@ -1350,15 +1354,17 @@ void CWriter::Write(const Const& const_) {
 void CWriter::WriteCallGraphDecls() {
   // Create CalleeNode struct
   Write("typedef struct CalleeNode", OpenBrace());
-  Write("char * callee;", Newline());
+  Write("char *callee;", Newline());
   Write("struct CalleeNode *next;", Newline());
   Write(CloseBrace(), " CalleeNode;", Newline());
+  Write(Newline());
   // Create FunctionNode struct, which has a LinkedList of callee
   Write("typedef struct FunctionNode", OpenBrace());
   Write("char *caller;", Newline());
   Write("CalleeNode *callees;", Newline());
   Write("UT_hash_handle hh;", Newline());
   Write(CloseBrace(), " FunctionNode;", Newline());
+  Write(Newline());
   // Declare extern graph, which will be initialized in the module code
   Write("extern FunctionNode* graph;", Newline());
   Write(Newline());
@@ -1369,6 +1375,7 @@ void CWriter::WriteCallGraphFuncsDecls() {
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_parse_line(FunctionNode**, char*);");
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_free_graph(FunctionNode*);");
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_print_graph(FunctionNode*);");
+  Write("bool ", kAdminSymbolPrefix, module_prefix_, "_contains_edge(const char *, const char *);");
   Write(Newline());
 }
 
@@ -1388,7 +1395,7 @@ void CWriter::WriteCallGraphFuncs() {
   Write("new_callee->next = fn->callees;", Newline());
   Write("fn->callees = new_callee;", Newline());
   Write(CloseBrace(), Newline());
-
+  Write(Newline());
   // parse an individual line from a call graph parsed from cflow
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_parse_line(FunctionNode** graph, char* line) ", OpenBrace());
   Write("char* colon = strchr(line, ':');", Newline());
@@ -1407,7 +1414,7 @@ void CWriter::WriteCallGraphFuncs() {
   Write("callee = strtok(NULL, \", \");", Newline());
   Write(CloseBrace(), Newline());
   Write(CloseBrace(), Newline());
-
+  Write(Newline());
   // free graph memory when done
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_free_graph(FunctionNode*graph) ", OpenBrace());
   Write("FunctionNode *current, *tmp;", Newline());
@@ -1420,13 +1427,14 @@ void CWriter::WriteCallGraphFuncs() {
   Write("free(temp->callee);", Newline());
   Write("free(temp);", Newline());
   Write(CloseBrace(), Newline());
+  Write(Newline());
   // once all callees freed, free the caller
   Write("HASH_DEL(graph, current);", Newline());
   Write("free(current->caller);", Newline());
   Write("free(current);", Newline());
   Write(CloseBrace(), Newline());
   Write(CloseBrace(), Newline());
-
+  Write(Newline());
   // print graph for a call graph
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_print_graph(FunctionNode* graph) ", OpenBrace());
   Write("printf(\"Printing out call graph: \\n\");", Newline());
@@ -1444,6 +1452,126 @@ void CWriter::WriteCallGraphFuncs() {
   Write(CloseBrace(), Newline());
   Write(Newline());
 
+  // Find if an edge exists for a caller, callee relationship
+  Write("bool ", kAdminSymbolPrefix, module_prefix_, "_contains_edge(const char *caller, const char *callee) ", OpenBrace());
+  Write("if (!graph || !caller || !callee) ", OpenBrace());
+  Write("return false;", Newline());
+  Write(CloseBrace(), Newline());
+
+  Write("FunctionNode *caller_node;", Newline());
+  Write("HASH_FIND_STR(graph, caller, caller_node);", Newline());
+  Write("if (!caller_node) ", OpenBrace());
+  Write("return false; // caller node not found", Newline());
+  Write(CloseBrace(), Newline());
+
+  Write("CalleeNode *current_callee = caller_node->callees;", Newline());
+  Write("while (current_callee) ", OpenBrace());
+  Write("if (strcmp(current_callee->callee, callee) == 0) ", OpenBrace());
+  Write("return true; // found an edge between caller and callee", Newline());
+  Write(CloseBrace(), Newline());
+  Write("current_callee = current_callee->next;", Newline());
+  Write(CloseBrace(), Newline());
+  Write("return false;", Newline());
+  Write(CloseBrace(), Newline());
+  Write(Newline());
+}
+
+void CWriter::WriteCallStackDecls() {
+  // Stack node decls
+  Write("typedef struct StackNode ", OpenBrace());
+  Write("const char *caller;", Newline());
+  Write("const char *prev_caller;", Newline());
+  Write("void *key;", Newline());
+  Write("struct StackNode *next;", Newline());
+  Write(CloseBrace(), " StackNode;", Newline());
+  Write(Newline());
+
+  // Stack decls
+  Write("typedef struct Stack ", OpenBrace());
+  Write("StackNode *top;", Newline());
+  Write(CloseBrace(), " Stack;", Newline());
+  Write(Newline());
+  
+  // Extern declaration of stack, will be intialized in main
+  Write("extern struct Stack *call_stack;", Newline());
+}
+
+void CWriter::WriteCallStackFuncsDecls() {
+  Write("Stack *", kAdminSymbolPrefix, module_prefix_, "_create_stack();");
+  Write(Newline());
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_push_stack(Stack *, const char *, const char *, void *);");
+  Write(Newline());
+  Write("StackNode *", kAdminSymbolPrefix, module_prefix_, "_pop_stack(Stack *);");
+  Write(Newline());
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_free_stack_node(StackNode *);");
+  Write(Newline());
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_destroy_stack(Stack *);");
+  Write(Newline());
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_print_stack(Stack *);");
+  Write(Newline());
+}
+
+void CWriter::WriteCallStackFuncs() {
+  // Create stack
+  Write("Stack *", kAdminSymbolPrefix, module_prefix_, "_create_stack() ", OpenBrace());
+  Write("Stack *stack = (Stack *)malloc(sizeof(Stack));", Newline());
+  Write("stack->top = NULL; // Top of stack initially empty", Newline());
+  Write("return stack;", Newline());
+  Write(CloseBrace(), Newline());
+  Write(Newline());
+  // Push Stack
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_push_stack(Stack *stack, const char *caller, const char *prev_caller, void *key) ", OpenBrace());
+  Write("StackNode *new_node = (StackNode *)malloc(sizeof(StackNode));", Newline());
+  Write("new_node->caller = strdup(caller);", Newline());
+  Write("new_node->prev_caller = strdup(prev_caller);", Newline());
+  Write("new_node->key = key;", Newline());
+  Write("new_node->next = stack->top;", Newline());
+  Write("stack->top = new_node;", Newline());
+  Write(CloseBrace(), Newline());
+  Write(Newline());
+  // Pop stack
+  Write("StackNode *", kAdminSymbolPrefix, module_prefix_, "_pop_stack(Stack *stack) ", OpenBrace());
+  Write("if (!stack->top) ", OpenBrace());
+  Write("return NULL;", Newline());
+  Write(CloseBrace(), Newline());
+  Write("StackNode *top_node = stack->top;", Newline());
+  Write("stack->top = stack->top->next;", Newline());
+  Write("return top_node;", Newline());
+  Write(CloseBrace(), Newline());
+  Write(Newline());
+  // free a stack node
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_free_stack_node(StackNode *node)", OpenBrace());
+  Write("if (!node) ", OpenBrace());
+  Write("return;", Newline());
+  Write(CloseBrace(), Newline());
+  Write("free(node->caller);", Newline());
+  Write("free(node->prev_caller);", Newline());
+  Write("free(node);", Newline());
+  Write(CloseBrace(), Newline());
+  Write(Newline());
+  // Destroy the stack by freeing all stack nodes and then the stack itself
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_destroy_stack(Stack *stack) ", OpenBrace());
+  Write("StackNode *current = stack->top;", Newline());
+  Write("while (current) ", OpenBrace());
+  Write("StackNode *temp = current;", Newline());
+  Write("current = current->next;", Newline());
+  Write(kAdminSymbolPrefix, module_prefix_, "_free_stack_node(temp);", Newline());
+  Write(CloseBrace(), Newline());
+  Write("free(stack);", Newline());
+  Write(CloseBrace(), Newline());
+  Write(Newline());
+  // Print stack
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_print_stack(Stack *stack) ", OpenBrace());
+  Write("StackNode *current = stack->top;", Newline());
+  Write("printf(\"Current stack: \\n\");", Newline());
+  Write("printf(\"----------------------\\n\");", Newline());
+  Write("while (current) ", OpenBrace());
+  Write("printf(\"Caller: %s, prev_caller: %s, Pointer: %p\\n\", current->caller, current->prev_caller ? current->prev_caller : \"NULL\", current->key);", Newline());
+  Write("current = current->next;", Newline());
+  Write(CloseBrace(), Newline());
+  Write("printf(\"----------------------\\n\");", Newline());
+  Write(CloseBrace(), Newline());
+  Write(Newline());
 }
 
 void CWriter::WriteFileOpenDecls() {
@@ -2302,6 +2430,7 @@ void CWriter::WriteMemoryInfoDecl() {
   }
   Write("// Memory Info Decl", Newline());
   Write("struct MemoryInfo *map = NULL;    /* important! initialize to NULL */", Newline());
+  Write(Newline());
 }
 
 void CWriter::WriteMemoryInfoFuncs() {
@@ -2360,6 +2489,7 @@ void CWriter::WriteMemoryInfoFuncsDecls() {
   Write("typedef struct MemoryInfo", OpenBrace());
   Write("void *key;", Newline());
   Write("size_t clean_rechecks;", Newline());
+  Write("const char *last_verified;", Newline());
   Write("UT_hash_handle hh; /* makes this structure hashable */", Newline());
   Write(CloseBrace(), " MemoryInfo;", Newline());
   Write(Newline());
@@ -5272,24 +5402,26 @@ void CWriter::WriteMemInstrumentation() {
 
   // If the memory is already tracked
   Write("if (existing) ", OpenBrace());
-  // Check if it was last verified at wasm_rt_call_stack_depth - 1
-  // Write("if (existing->last_verified == wasm_rt_call_stack_depth - 1) ", OpenBrace());
   Write("printf(\"Caller: %s, Callee: %s\\n\", caller, __func__);", Newline());
-  Write("if (true) ", OpenBrace());
+  // kAdminSymbolPrefix, module_prefix_, "_contains_edge
+  Write("// If the last verified is the current method or calls the current method", Newline());
+  Write("if (existing->last_verified && strcmp(existing->last_verified, caller) == 0 || ", kAdminSymbolPrefix, module_prefix_, "_contains_edge(existing->last_verified, caller)) " , OpenBrace());
   Write("existing->clean_rechecks++;", Newline());
-  Write(CloseBrace(), " else ", OpenBrace());
-  // Write("existing->last_verified = wasm_rt_call_stack_depth;", Newline());
-  Write("// TODO", Newline());
-
+  Write("return;", Newline());
   Write(CloseBrace(), Newline());
   Write(CloseBrace(), " else ", OpenBrace()); 
   // Allocate and initialize a new MemoryInfo structure
   Write("MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));", Newline());
   Write("temp->key = ptr;", Newline());
-  // Write("temp->bounds = 1;", Newline()); // TODO: Dynamically determine bounds
   Write("temp->clean_rechecks = 0;", Newline());
+  Write("temp->last_verified = caller;", Newline());
   Write(kAdminSymbolPrefix, module_prefix_, "_map_insert(temp);", Newline());
   Write(CloseBrace(), Newline());
+  Write("// Revalidate because there is no relationship in the call graph", Newline());
+  Write("existing = ", kAdminSymbolPrefix, module_prefix_, "_map_find(ptr);", Newline());
+  Write("printf(\"Revalidating memory at %p by %s, prev_caller: %s\\n\", ptr, caller, existing->last_verified);", Newline());
+  Write(kAdminSymbolPrefix, module_prefix_, "_push_stack(call_stack, existing->last_verified, caller, ptr);", Newline());
+  Write(kAdminSymbolPrefix, module_prefix_, "_print_stack(call_stack);", Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
 }
@@ -6126,10 +6258,16 @@ void CWriter::WriteCHeader() {
   WriteInitDecl();
   WriteFreeDecl();
   // Logging stuff here
+  // File logging
   WriteFileOpenDecls();
   WriteFileCloseDecls();
+  // Call Graph Implementation
   WriteCallGraphDecls();
   WriteCallGraphFuncsDecls();
+  // Global Call Stack Implementation
+  WriteCallStackDecls();
+  WriteCallStackFuncsDecls();
+  // Mem Instrumentation and Map
   WriteMemInstrumentationDecls();
   WriteMemoryInfoFuncsDecls();
   WriteGetFuncTypeDecl();
@@ -6171,6 +6309,7 @@ void CWriter::WriteCSource() {
   WriteFileDecl();
   WriteFileOpen();
   WriteCallGraphFuncs();
+  WriteCallStackFuncs();
   WriteMemInstrumentation();
   WriteMemoryInfoDecl();
   WriteMemoryInfoFuncs();
