@@ -212,6 +212,10 @@ void w2c_wasi__snapshot__preview1_proc_exit(
   abort();
 }
 
+
+FunctionNode* graph = NULL;
+Stack *call_stack = NULL;
+
 int main(int argc, char const* argv[]) {
   w2c_dhrystone dhrystone;
   struct w2c_wasi__snapshot__preview1 wasi;
@@ -262,7 +266,6 @@ int main(int argc, char const* argv[]) {
       return 1;
   }
 
-  FunctionNode* graph = NULL;
   char line[256];
 
   // Read and process each line
@@ -275,6 +278,7 @@ int main(int argc, char const* argv[]) {
   fclose(file);
 
   wasm2c_dhrystone_print_graph(graph);
+  call_stack = wasm2c_dhrystone_create_stack();
 
   wasi.w2c_memory = &dhrystone.w2c_memory;
   wasi.uvwasi = &local_uvwasi_state,

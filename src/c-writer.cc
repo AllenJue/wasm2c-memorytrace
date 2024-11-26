@@ -2469,8 +2469,8 @@ void CWriter::WriteMemoryInfoFuncs() {
 
   Write(CloseBrace(), Newline());
 
-  Write("fprintf(log_file, \"clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf\\n\",\
-    total_rechecks, total_checks, ((double)total_rechecks) / total_checks);", Newline());
+  Write("fprintf(log_file, \"clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf%\\n\",\
+    total_rechecks, total_checks, ((double)total_rechecks) / total_checks * 100);", Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
 }
@@ -3398,7 +3398,7 @@ void CWriter::Write(const Func& func) {
     Write("printf(\"Function returning: %s\\n\", __func__);", Newline());
     Write("while (call_stack->top && strcmp(call_stack->top->caller, __func__) == 0)", OpenBrace());
     Write("StackNode *temp = ", kAdminSymbolPrefix, module_prefix_, "_pop_stack(call_stack);", Newline());
-    Write("MemoryInfo *associated_info = wasm2c_fibonacci_map_find(temp->key);", Newline());
+    Write("MemoryInfo *associated_info = ", kAdminSymbolPrefix, module_prefix_, "_map_find(temp->key);", Newline());
     Write("if (associated_info)", OpenBrace());
     Write("associated_info->last_verified = strdup(temp->prev_caller);", Newline());
     Write(CloseBrace(), Newline());
@@ -5413,7 +5413,7 @@ void CWriter::WriteMemInstrumentation() {
 
   // If the memory is already tracked
   Write("if (existing) ", OpenBrace());
-  Write("printf(\"Caller: %s, Callee: %s\\n\", caller, __func__);", Newline());
+  // Write("printf(\"Caller: %s, Callee: %s\\n\", caller, __func__);", Newline());
   // kAdminSymbolPrefix, module_prefix_, "_contains_edge
   Write("// If the last verified is the current method or calls the current method", Newline());
   Write("if (existing->last_verified && strcmp(existing->last_verified, caller) == 0 || ", kAdminSymbolPrefix, module_prefix_, "_contains_edge(existing->last_verified, caller)) " , OpenBrace());

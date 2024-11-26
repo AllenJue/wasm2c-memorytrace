@@ -921,7 +921,7 @@ void wasm2c_fibonacci_print_map(){
     fprintf(log_file, "key: %p, clean_rechecks: %ld\n",     m->key, m->clean_rechecks);
     total_rechecks += m->clean_rechecks;
   }
-  fprintf(log_file, "clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf\n",    total_rechecks, total_checks, ((double)total_rechecks) / total_checks);
+  fprintf(log_file, "clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf%\n",    total_rechecks, total_checks, ((double)total_rechecks) / total_checks * 100);
 }
 
 static void init_memories(w2c_fibonacci* instance) {
