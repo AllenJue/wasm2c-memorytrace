@@ -1386,12 +1386,15 @@ void CWriter::WriteCallGraphFuncs() {
   Write("HASH_FIND_STR(*graph, caller, fn);", Newline());
   Write("if (!fn) ", OpenBrace());
     Write("fn = malloc(sizeof(FunctionNode));", Newline());
-    Write("fn->caller = strdup(caller);", Newline());
+    // Write("fn->caller = strdup(caller);", Newline());
+    Write("fn->caller = caller;", Newline());
+
     Write("fn->callees = NULL;", Newline());
     Write("HASH_ADD_KEYPTR(hh, *graph, fn->caller, strlen(fn->caller), fn);", Newline());
   Write(CloseBrace(), Newline());
   Write("CalleeNode *new_callee = malloc(sizeof(CalleeNode));", Newline());
-  Write("new_callee->callee = strdup(callee);", Newline());
+  // Write("new_callee->callee = strdup(callee);", Newline());
+  Write("new_callee->callee = callee;", Newline());
   Write("new_callee->next = fn->callees;", Newline());
   Write("fn->callees = new_callee;", Newline());
   Write(CloseBrace(), Newline());
@@ -1424,13 +1427,13 @@ void CWriter::WriteCallGraphFuncs() {
   Write("while (callee) ", OpenBrace());
   Write("CalleeNode *temp = callee;", Newline());
   Write("callee = callee->next;", Newline());
-  Write("free(temp->callee);", Newline());
+  // Write("free(temp->callee);", Newline());
   Write("free(temp);", Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
   // once all callees freed, free the caller
   Write("HASH_DEL(graph, current);", Newline());
-  Write("free(current->caller);", Newline());
+  // Write("free(current->caller);", Newline());
   Write("free(current);", Newline());
   Write(CloseBrace(), Newline());
   Write(CloseBrace(), Newline());
@@ -1522,8 +1525,10 @@ void CWriter::WriteCallStackFuncs() {
   // Push Stack
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_push_stack(Stack *stack, const char *caller, const char *prev_caller, void *key) ", OpenBrace());
   Write("StackNode *new_node = (StackNode *)malloc(sizeof(StackNode));", Newline());
-  Write("new_node->caller = strdup(caller);", Newline());
-  Write("new_node->prev_caller = strdup(prev_caller);", Newline());
+  // Write("new_node->caller = strdup(caller);", Newline());
+  // Write("new_node->prev_caller = strdup(prev_caller);", Newline());
+  Write("new_node->caller = caller;", Newline());
+  Write("new_node->prev_caller = prev_caller;", Newline());
   Write("new_node->key = key;", Newline());
   Write("new_node->next = stack->top;", Newline());
   Write("stack->top = new_node;", Newline());
@@ -1544,8 +1549,8 @@ void CWriter::WriteCallStackFuncs() {
   Write("if (!node) ", OpenBrace());
   Write("return;", Newline());
   Write(CloseBrace(), Newline());
-  Write("free(node->caller);", Newline());
-  Write("free(node->prev_caller);", Newline());
+  // Write("free(node->caller);", Newline());
+  // Write("free(node->prev_caller);", Newline());
   Write("free(node);", Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
@@ -1563,13 +1568,13 @@ void CWriter::WriteCallStackFuncs() {
   // Print stack
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_print_stack(Stack *stack) ", OpenBrace());
   Write("StackNode *current = stack->top;", Newline());
-  Write("printf(\"Current stack: \\n\");", Newline());
-  Write("printf(\"----------------------\\n\");", Newline());
+  // Write("printf(\"Current stack: \\n\");", Newline());
+  // Write("printf(\"----------------------\\n\");", Newline());
   Write("while (current) ", OpenBrace());
-  Write("printf(\"Caller: %s, prev_caller: %s, Pointer: %p\\n\", current->caller, current->prev_caller ? current->prev_caller : \"NULL\", current->key);", Newline());
+  // Write("printf(\"Caller: %s, prev_caller: %s, Pointer: %p\\n\", current->caller, current->prev_caller ? current->prev_caller : \"NULL\", current->key);", Newline());
   Write("current = current->next;", Newline());
   Write(CloseBrace(), Newline());
-  Write("printf(\"----------------------\\n\");", Newline());
+  // Write("printf(\"----------------------\\n\");", Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
 }
@@ -2456,6 +2461,19 @@ void CWriter::WriteMemoryInfoFuncs() {
   Write(CloseBrace(), Newline());
   Write(Newline());
 
+  // Clean up the map
+
+  // Function to free the memory info map
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_free_info_map() ", OpenBrace());
+  Write("MemoryInfo *current = NULL;", Newline());
+  Write("MemoryInfo *tmp = NULL;", Newline());
+  Write("HASH_ITER(hh, map, current, tmp) ", OpenBrace());
+  Write("HASH_DEL(map, current);", Newline());
+  Write("free(current);", Newline());
+  Write(CloseBrace(), Newline());
+  Write(CloseBrace(), Newline());
+  Write(Newline());
+
   // write method for printing out all MemoryInfo map
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_print_map()", OpenBrace());
   Write("MemoryInfo *m;", Newline());
@@ -2495,9 +2513,9 @@ void CWriter::WriteMemoryInfoFuncsDecls() {
   Write(Newline());
 
   Write("// Memory Info Func Decls", Newline());
-  Write("void ", kAdminSymbolPrefix, module_prefix_, 
-    "_map_insert(MemoryInfo *memInfo);");
-  Write(Newline());
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_map_insert(MemoryInfo *memInfo);", Newline());
+  Write("void ", kAdminSymbolPrefix, module_prefix_, "_free_info_map();", Newline());
+
   Write("MemoryInfo *", kAdminSymbolPrefix, module_prefix_, "_map_find(void *key);", Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_print_map();", Newline());
   Write(Newline());
@@ -3395,12 +3413,15 @@ void CWriter::Write(const Func& func) {
   PushTypes(func.decl.sig.result_types);
   Write("FUNC_EPILOGUE;", Newline());
   if(s_trace) {
-    Write("printf(\"Function returning: %s\\n\", __func__);", Newline());
+    // Write("printf(\"Function returning: %s\\n\", __func__);", Newline());
     Write("while (call_stack->top && strcmp(call_stack->top->caller, __func__) == 0)", OpenBrace());
     Write("StackNode *temp = ", kAdminSymbolPrefix, module_prefix_, "_pop_stack(call_stack);", Newline());
     Write("MemoryInfo *associated_info = ", kAdminSymbolPrefix, module_prefix_, "_map_find(temp->key);", Newline());
     Write("if (associated_info)", OpenBrace());
-    Write("associated_info->last_verified = strdup(temp->prev_caller);", Newline());
+    // Write("free(associated_info->last_verified);", Newline());
+    // Write("associated_info->last_verified = strdup(temp->prev_caller);", Newline());
+    Write("associated_info->last_verified = temp->prev_caller;", Newline());
+
     Write(CloseBrace(), Newline());
     Write(kAdminSymbolPrefix, module_prefix_, "_free_stack_node(temp);", Newline()); 
     Write(CloseBrace(), Newline());
@@ -5425,12 +5446,13 @@ void CWriter::WriteMemInstrumentation() {
   Write("MemoryInfo *temp = (MemoryInfo *)malloc(sizeof(MemoryInfo));", Newline());
   Write("temp->key = ptr;", Newline());
   Write("temp->clean_rechecks = 0;", Newline());
+  // Write("temp->last_verified = strdup(caller);", Newline());
   Write("temp->last_verified = caller;", Newline());
   Write(kAdminSymbolPrefix, module_prefix_, "_map_insert(temp);", Newline());
   Write(CloseBrace(), Newline());
   Write("// Revalidate because there is no relationship in the call graph", Newline());
   Write("existing = ", kAdminSymbolPrefix, module_prefix_, "_map_find(ptr);", Newline());
-  Write("printf(\"Revalidating memory at %p by %s, prev_caller: %s\\n\", ptr, caller, existing->last_verified);", Newline());
+  // Write("printf(\"Revalidating memory at %p by %s, prev_caller: %s\\n\", ptr, caller, existing->last_verified);", Newline());
   Write(kAdminSymbolPrefix, module_prefix_, "_push_stack(call_stack, existing->last_verified, caller, ptr);", Newline());
   Write(kAdminSymbolPrefix, module_prefix_, "_print_stack(call_stack);", Newline());
   Write(CloseBrace(), Newline());

@@ -74,11 +74,12 @@ int main(int argc, char** argv) {
     w2c_fibonacci_fibonacci_loop(&fibonnaci, input);
   }
   wasm2c_fibonacci_print_map();
-  wasm2c_fibonacci_free(&fibonnaci);
   wasm2c_fibonacci_free_graph(graph);
+  wasm2c_fibonacci_destroy_stack(call_stack);
+  wasm2c_fibonacci_free_info_map();
+  wasm2c_fibonacci_free(&fibonnaci);
   wasm2c_fibonacci_file_close();
-
-  wasm_rt_free();
+  // wasm_rt_free();
   clock_t end = clock();
   double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
   printf("Time taken: %f seconds\n", time_taken);
