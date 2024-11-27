@@ -292,6 +292,7 @@ int main(int argc, char const* argv[]) {
   uvwasi_destroy(&local_uvwasi_state);
   wasm2c_dhrystone_print_map(); 
   wasm2c_dhrystone_file_close();
+  wasm2c_dhrystone_destroy_stack(call_stack);
   wasm2c_dhrystone_free_graph(graph);
   // wasm_rt_free();
 

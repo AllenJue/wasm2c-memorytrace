@@ -1393,8 +1393,8 @@ void CWriter::WriteCallGraphFuncs() {
     Write("HASH_ADD_KEYPTR(hh, *graph, fn->caller, strlen(fn->caller), fn);", Newline());
   Write(CloseBrace(), Newline());
   Write("CalleeNode *new_callee = malloc(sizeof(CalleeNode));", Newline());
-  // Write("new_callee->callee = strdup(callee);", Newline());
-  Write("new_callee->callee = callee;", Newline());
+  Write("new_callee->callee = strdup(callee);", Newline());
+  // Write("new_callee->callee = callee;", Newline());
   Write("new_callee->next = fn->callees;", Newline());
   Write("fn->callees = new_callee;", Newline());
   Write(CloseBrace(), Newline());
@@ -1408,13 +1408,10 @@ void CWriter::WriteCallGraphFuncs() {
   Write("*colon = '\\0';  // Null-terminate the caller", Newline());
   Write("char* caller = line;", Newline());
   Write("char* callees = colon + 1;", Newline());
-  Write("while (*callees == ' ')", OpenBrace());
-  Write("callees++;", Newline());
-  Write(CloseBrace(), Newline());
-  Write("char* callee = strtok(callees, \", \");", Newline());
+  Write("char* callee = strtok(callees, \",\");", Newline());
   Write("while (callee) ", OpenBrace());
   Write(kAdminSymbolPrefix, module_prefix_, "_add_callee(graph, caller, callee);", Newline());
-  Write("callee = strtok(NULL, \", \");", Newline());
+  Write("callee = strtok(NULL, \",\");", Newline());
   Write(CloseBrace(), Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
@@ -1427,7 +1424,7 @@ void CWriter::WriteCallGraphFuncs() {
   Write("while (callee) ", OpenBrace());
   Write("CalleeNode *temp = callee;", Newline());
   Write("callee = callee->next;", Newline());
-  // Write("free(temp->callee);", Newline());
+  Write("free(temp->callee);", Newline());
   Write("free(temp);", Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
@@ -2487,7 +2484,7 @@ void CWriter::WriteMemoryInfoFuncs() {
 
   Write(CloseBrace(), Newline());
 
-  Write("fprintf(log_file, \"clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf%\\n\",\
+  Write("fprintf(log_file, \"clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf\n\",\
     total_rechecks, total_checks, ((double)total_rechecks) / total_checks * 100);", Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());

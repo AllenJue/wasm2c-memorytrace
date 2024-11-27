@@ -71,6 +71,21 @@ StackNode *wasm2c_fibonacci_pop_stack(Stack *);
 void wasm2c_fibonacci_free_stack_node(StackNode *);
 void wasm2c_fibonacci_destroy_stack(Stack *);
 void wasm2c_fibonacci_print_stack(Stack *);
+wasm_rt_memory_t* wasm2c_fibonacci(w2c_fibonacci* instance);
+void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*, u64, const char *);
+typedef struct MemoryInfo{
+  void *key;
+  size_t clean_rechecks;
+  const char *last_verified;
+  UT_hash_handle hh; /* makes this structure hashable */
+} MemoryInfo;
+
+// Memory Info Func Decls
+void wasm2c_fibonacci_map_insert(MemoryInfo *memInfo);
+void wasm2c_fibonacci_free_info_map();
+MemoryInfo *wasm2c_fibonacci_map_find(void *key);
+void wasm2c_fibonacci_print_map();
+
 wasm_rt_func_type_t wasm2c_fibonacci_get_func_type(uint32_t param_count, uint32_t result_count, ...);
 
 /* import: 'host' 'buf_done' */

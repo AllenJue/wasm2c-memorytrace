@@ -1,5 +1,6 @@
 # Path to the Cflow output file
-cflow_output_file = "/u/allenjue/cs380s/Final_Project/wabt/wasm2c/benchmarks/dhrystone/dhrystone_flow.txt"
+# cflow_output_file = "/u/allenjue/cs380s/Final_Project/wabt/wasm2c/benchmarks/dhrystone/dhrystone_flow.txt"
+cflow_output_file = "/u/allenjue/cs380s/Final_Project/wabt/wasm2c/examples/fibonacci/fib_flow.txt"
 
 # Dictionary to store caller-callee relationships
 caller_callee_map = {}
@@ -49,4 +50,4 @@ with open(cflow_output_file, "r") as file:
 
 parse_callees(lines)
 for caller, callees in caller_callee_map.items():
-    print(caller, ':',', '.join(callees))
+    print(caller, ':', ','.join(callees), sep='')
