@@ -19,10 +19,10 @@ Stack *call_stack = NULL;
 
 int main(int argc, char** argv) {
   /* Make sure there is at least two command-line argument. */
-  if (argc < 3) {
-    printf("Invalid argument. Expected '%s WORD...'\n", argv[0]);
-    return 1;
-  }
+  // if (argc < 3) {
+  //   printf("Invalid argument. Expected '%s WORD...'\n", argv[0]);
+  //   return 1;
+  // }
 
     /* Initialize the Wasm runtime. */
   clock_t start = clock();
@@ -32,8 +32,11 @@ int main(int argc, char** argv) {
       page of Wasm memory (64 KiB) that the rot13 module instance will import. */
   struct w2c_host host;
   wasm_rt_allocate_memory(&host.memory, 1, 1, false);
+  char *temp = "fib_flow_parse.txt";
+  // char *temp = "/u/allenjue/cs380s/Final_Project/wabt/wasm2c/examples/fibonacci/fib_flow_parse.txt";
 
-  FILE* file = fopen(argv[1], "r");
+  FILE* file = fopen(temp, "r");
+  // FILE* file = fopen(argv[1], "r");
   if (!file) {
       perror("Error opening file");
       return 1;
@@ -61,18 +64,18 @@ int main(int argc, char** argv) {
   wasm2c_fibonacci_instantiate(&fibonnaci, &host);
   wasm2c_fibonacci_file_open();
 
-  argc--;
-  argv++;
+  // argc--;
+  // argv++;
 
-  while (argc > 1) {
+  // while (argc > 1) {
     /* Move to next arg. Do this first, so the program name is skipped. */
-    argc--;
-    argv++;
-    u32 input = atoi(argv[0]);  // Convert argument to integer
-    // u32 input = 10;
+    // argc--;
+    // argv++;
+    // u32 input = atoi(argv[0]);  // Convert argument to integer
+    u32 input = 10;
     printf("%d\n", input);
     w2c_fibonacci_fibonacci_loop(&fibonnaci, input);
-  }
+  // }
   wasm2c_fibonacci_print_map();
   wasm2c_fibonacci_free_graph(graph);
   wasm2c_fibonacci_destroy_stack(call_stack);

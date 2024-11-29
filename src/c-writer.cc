@@ -1352,6 +1352,9 @@ void CWriter::Write(const Const& const_) {
 }
 
 void CWriter::WriteCallGraphDecls() {
+  if(!s_trace) {
+    return;
+  }
   // Create CalleeNode struct
   Write("typedef struct CalleeNode", OpenBrace());
   Write("char *callee;", Newline());
@@ -1371,6 +1374,9 @@ void CWriter::WriteCallGraphDecls() {
 }
 
 void CWriter::WriteCallGraphFuncsDecls() {
+  if(!s_trace) {
+    return;
+  }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_add_callee(FunctionNode**, const char*, const char*);");
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_parse_line(FunctionNode**, char*);");
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_free_graph(FunctionNode*);");
@@ -1380,17 +1386,20 @@ void CWriter::WriteCallGraphFuncsDecls() {
 }
 
 void CWriter::WriteCallGraphFuncs() {
+  if(!s_trace) {
+    return;
+  }
   // add a single caller-callee edge
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_add_callee(FunctionNode** graph, const char* caller, const char* callee) ", OpenBrace());
   Write("FunctionNode *fn;", Newline());
   Write("HASH_FIND_STR(*graph, caller, fn);", Newline());
   Write("if (!fn) ", OpenBrace());
-    Write("fn = malloc(sizeof(FunctionNode));", Newline());
-    // Write("fn->caller = strdup(caller);", Newline());
-    Write("fn->caller = caller;", Newline());
+  Write("fn = malloc(sizeof(FunctionNode));", Newline());
+  // Write("fn->caller = strdup(caller);", Newline());
+  Write("fn->caller = caller;", Newline());
 
-    Write("fn->callees = NULL;", Newline());
-    Write("HASH_ADD_KEYPTR(hh, *graph, fn->caller, strlen(fn->caller), fn);", Newline());
+  Write("fn->callees = NULL;", Newline());
+  Write("HASH_ADD_KEYPTR(hh, *graph, fn->caller, strlen(fn->caller), fn);", Newline());
   Write(CloseBrace(), Newline());
   Write("CalleeNode *new_callee = malloc(sizeof(CalleeNode));", Newline());
   Write("new_callee->callee = strdup(callee);", Newline());
@@ -1477,6 +1486,9 @@ void CWriter::WriteCallGraphFuncs() {
 }
 
 void CWriter::WriteCallStackDecls() {
+  if(!s_trace) {
+    return;
+  }
   // Stack node decls
   Write("typedef struct StackNode ", OpenBrace());
   Write("const char *caller;", Newline());
@@ -1497,6 +1509,9 @@ void CWriter::WriteCallStackDecls() {
 }
 
 void CWriter::WriteCallStackFuncsDecls() {
+  if(!s_trace) {
+    return;
+  }
   Write("Stack *", kAdminSymbolPrefix, module_prefix_, "_create_stack();");
   Write(Newline());
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_push_stack(Stack *, const char *, const char *, void *);");
@@ -1512,6 +1527,9 @@ void CWriter::WriteCallStackFuncsDecls() {
 }
 
 void CWriter::WriteCallStackFuncs() {
+  if(!s_trace) {
+    return;
+  }
   // Create stack
   Write("Stack *", kAdminSymbolPrefix, module_prefix_, "_create_stack() ", OpenBrace());
   Write("Stack *stack = (Stack *)malloc(sizeof(Stack));", Newline());
@@ -1577,11 +1595,17 @@ void CWriter::WriteCallStackFuncs() {
 }
 
 void CWriter::WriteFileOpenDecls() {
+  if(!s_trace) {
+    return;
+  }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_open();");
   Write(Newline());
 }
 
 void CWriter::WriteFileCloseDecls() {
+  if(!s_trace) {
+    return;
+  }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_file_close();");
   Write(Newline());
 }
@@ -2478,14 +2502,14 @@ void CWriter::WriteMemoryInfoFuncs() {
   Write("for(m = map; m != NULL; m = m->hh.next)", OpenBrace());
   // Write("printf(\"key: %p, clean_rechecks: %ld, bounds: %ld\\n\", \
   //   m->key, m->clean_rechecks, m->bounds);", Newline());
-  Write("fprintf(log_file, \"key: %p, clean_rechecks: %ld\\n\", \
-    m->key, m->clean_rechecks);", Newline());
+  Write("fprintf(log_file, \"key: %p, clean_rechecks: %ld\\n\", m->key, m->clean_rechecks);", Newline());
+  
   Write("total_rechecks += m->clean_rechecks;", Newline());
 
   Write(CloseBrace(), Newline());
 
-  Write("fprintf(log_file, \"clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf\n\",\
-    total_rechecks, total_checks, ((double)total_rechecks) / total_checks * 100);", Newline());
+  Write("fprintf(log_file, \"clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf\\n\", total_rechecks, total_checks, ((double)total_rechecks) / total_checks * 100);", Newline());
+  Write("printf(\"clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf\\n\", total_rechecks, total_checks, ((double)total_rechecks) / total_checks * 100);", Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
 }

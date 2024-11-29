@@ -255,12 +255,14 @@ int main(int argc, char const* argv[]) {
   }
 
   /* Make sure there is at least one command-line argument. */
-  if (argc < 2) {
-    printf("Invalid argument. Expected '%s WORD...'\n", argv[0]);
-    return 1;
-  }
+  // if (argc < 2) {
+  //   printf("Invalid argument. Expected '%s WORD...'\n", argv[0]);
+  //   return 1;
+  // }
+  char *temp = "/u/allenjue/cs380s/Final_Project/wabt/dhrystone_flow_parse.txt";
+  // FILE* file = fopen(argv[1], "r");
+  FILE* file = fopen(temp, "r");
 
-  FILE* file = fopen(argv[1], "r");
   if (!file) {
       perror("Error opening file");
       return 1;

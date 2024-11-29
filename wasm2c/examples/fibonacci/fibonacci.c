@@ -915,10 +915,11 @@ void wasm2c_fibonacci_free_info_map() {
 void wasm2c_fibonacci_print_map(){
   MemoryInfo *m;
   size_t total_rechecks = 0;for(m = map; m != NULL; m = m->hh.next){
-    fprintf(log_file, "key: %p, clean_rechecks: %ld\n",     m->key, m->clean_rechecks);
+    fprintf(log_file, "key: %p, clean_rechecks: %ld\n", m->key, m->clean_rechecks);
     total_rechecks += m->clean_rechecks;
   }
-  fprintf(log_file, "clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf%\n",    total_rechecks, total_checks, ((double)total_rechecks) / total_checks * 100);
+  fprintf(log_file, "clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf\n", total_rechecks, total_checks, ((double)total_rechecks) / total_checks * 100);
+  printf("clean_rechecks: %ld, total checks: %ld, percentage repeated: %lf\n", total_rechecks, total_checks, ((double)total_rechecks) / total_checks * 100);
 }
 
 static void init_memories(w2c_fibonacci* instance) {
@@ -966,7 +967,6 @@ void wasm2c_fibonacci_file_close() {
 }
 
 void wasm2c_fibonacci_free(w2c_fibonacci* instance) {
-  free(instance->w2c_host_mem->data);
 }
 
 wasm_rt_func_type_t wasm2c_fibonacci_get_func_type(uint32_t param_count, uint32_t result_count, ...) {
