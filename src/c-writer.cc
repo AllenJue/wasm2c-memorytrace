@@ -4220,6 +4220,10 @@ void CWriter::Write(const ExprList& exprs) {
         if (IsSingleUnsharedMemory()) {
           InstallSegueBase(module_->memories[0], false /* save_old_value */);
         }
+        if(s_trace) {
+          // Memory is growing, potentially changing the layout of the memory, invalidate the free_info_map
+          Write(kAdminSymbolPrefix, module_prefix_, "_free_info_map();", Newline());
+        }
         break;
       }
 
@@ -5528,8 +5532,10 @@ void CWriter::Write(const LoadExpr& expr) {
   Write(");", Newline());
 
   if (s_trace) {
-    Write(kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(instance, ", StackVar(0),
-      ", __func__);", Newline());
+    Write(kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(instance, ", StackVar(0));
+    if (expr.offset != 0)
+      Write(" + ", expr.offset, "u");
+    Write(", __func__);", Newline());
   }
 
   DropTypes(1);
@@ -5565,9 +5571,13 @@ void CWriter::Write(const StoreExpr& expr) {
   if (expr.offset != 0)
     Write(" + ", expr.offset);
   Write(", ", StackVar(0), ");", Newline());
+
+
   if (s_trace) {
-    Write(kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(instance, ", StackVar(1),
-      ", __func__);", Newline());
+    Write(kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(instance, ", StackVar(1));
+  if (expr.offset != 0)
+    Write(" + ", expr.offset);
+  Write(", __func__);", Newline());
   }
   DropTypes(2);
 }
