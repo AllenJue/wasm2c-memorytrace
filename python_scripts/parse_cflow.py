@@ -31,12 +31,12 @@ def parse_callees(lines, parent_function=None, parent_indent=0):
         function_name = stripped_line[:caller_end].strip()
 
         # Extract parameter list (inside "<...>")
-        params_start = stripped_line.find("<")
-        params_end = stripped_line.find(">")
-        params = stripped_line[params_start + 1:params_end] if params_start != -1 and params_end != -1 else ""
+        signature_start = stripped_line.find("<")
+        signature_end = stripped_line.find(">")
+        signature = stripped_line[signature_start + 1:signature_end] if signature_start != -1 and signature_end != -1 else ""
 
         # If the parent function is defined, add this as its callee
-        if parent_function and "var_p" in params:
+        if parent_function and "var_p" in signature:
             if parent_function not in caller_callee_map:
                 caller_callee_map[parent_function] = []
             caller_callee_map[parent_function].append(function_name)

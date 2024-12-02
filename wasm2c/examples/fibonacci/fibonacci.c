@@ -867,7 +867,7 @@ void wasm2c_fibonacci_print_stack(Stack *stack) {
 }
 
 void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*instance, u64 var, const char *caller){
-  void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);
+  void *ptr = (void*)((u64)w2c_fibonacci_memory(instance) + (u64)var);
   MemoryInfo *existing = wasm2c_fibonacci_map_find(ptr);
   total_checks++;
   if (existing) {
@@ -1013,6 +1013,7 @@ wasm_rt_func_type_t wasm2c_fibonacci_get_func_type(uint32_t param_count, uint32_
 
 u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
   u32 var_l1 = 0;
+   // Parameters: var_p0, 
   FUNC_PROLOGUE;
   u32 var_i0, var_i1, var_i2;
   var_i0 = var_p0;
@@ -1075,6 +1076,7 @@ u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
 
 void w2c_fibonacci_fibonacci_loop_0(w2c_fibonacci* instance, u32 var_p0) {
   u32 var_l1 = 0, var_l2 = 0;
+   // Parameters: var_p0, 
   FUNC_PROLOGUE;
   u32 var_i0, var_i1, var_i2, var_i3;
   var_i0 = 0u;

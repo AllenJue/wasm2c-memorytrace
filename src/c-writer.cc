@@ -444,6 +444,7 @@ class CWriter {
   void Write(const Func&);
   void WriteTailCallee(const Func&);
   void WriteParamsAndLocals();
+  void WriteParamComments();
   void WriteParams(const std::vector<std::string>& index_to_name);
   void WriteParamSymbols(const std::vector<std::string>& index_to_name);
   void WriteParamTypes(const FuncDeclaration& decl);
@@ -3420,10 +3421,10 @@ void CWriter::Write(const Func& func) {
   Write(func.decl.sig.result_types, " ",
         GlobalName(ModuleFieldType::Func, func.name), "(");
   WriteParamsAndLocals();
+  WriteParamComments();
   Write("FUNC_PROLOGUE;", Newline());
 
   PushFuncSection();
-
   std::string label = DefineLabelName(kImplicitFuncLabel);
   ResetTypeStack(0);
   std::string empty;  // Must not be temporary, since address is taken by Label.
@@ -3543,6 +3544,7 @@ void CWriter::WriteTailCallee(const Func& func) {
   FinishFunction();
 }
 
+
 void CWriter::WriteParamsAndLocals() {
   std::vector<std::string> index_to_name;
   MakeTypeBindingReverseMapping(func_->GetNumParamsAndLocals(), func_->bindings,
@@ -3552,8 +3554,27 @@ void CWriter::WriteParamsAndLocals() {
   WriteLocals(index_to_name);
 }
 
+void CWriter::WriteParamComments() {
+  Write(" // Parameters: ");
+  std::vector<std::string> param_names;
+  MakeTypeBindingReverseMapping(func_->GetNumParamsAndLocals(), func_->bindings, &param_names);
+  for (size_t i = 0; i < func_->GetNumParams(); ++i) {
+    if (i > 0) Write(", ");
+    std::string base_name = param_names[i];
+    std::string param_name;
+    if (!base_name.empty() && base_name[0] == '$') {
+      param_name = "var_" + base_name.substr(1);  // Remove $ and prepend "var_"
+    } else {
+      param_name = base_name; 
+    }
+    Write(param_name, ", ");
+  }
+  Write(Newline());
+}
+
 void CWriter::WriteParams(const std::vector<std::string>& index_to_name) {
   Write(ModuleInstanceTypeName(), "* instance");
+  // INTERESTING
   if (func_->GetNumParams() != 0) {
     Indent(4);
     for (Index i = 0; i < func_->GetNumParams(); ++i) {
@@ -3567,6 +3588,9 @@ void CWriter::WriteParams(const std::vector<std::string>& index_to_name) {
   }
   Write(")");
 }
+
+
+
 
 void CWriter::WriteParamSymbols(const std::vector<std::string>& index_to_name) {
   if (func_->GetNumParams() != 0) {

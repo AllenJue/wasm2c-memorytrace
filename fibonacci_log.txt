@@ -1,17 +1,8 @@
-key: 0x7fff63c90270, clean_rechecks: 7
-key: 0x7fff63c90278, clean_rechecks: 2
-key: 0x7fff63c90271, clean_rechecks: 1
-key: 0x7fff63c9027c, clean_rechecks: 0
-key: 0x7fff63c90272, clean_rechecks: 1
-key: 0x7fff63c90280, clean_rechecks: 0
-key: 0x7fff63c90273, clean_rechecks: 1
-key: 0x7fff63c90284, clean_rechecks: 0
-key: 0x7fff63c90275, clean_rechecks: 1
-key: 0x7fff63c90288, clean_rechecks: 0
-key: 0x7fff63c9028c, clean_rechecks: 0
-key: 0x7fff63c9027d, clean_rechecks: 1
-key: 0x7fff63c90290, clean_rechecks: 0
-key: 0x7fff63c90285, clean_rechecks: 0
-key: 0x7fff63c90294, clean_rechecks: 0
-key: 0x7fff63c90292, clean_rechecks: 0
-clean_rechecks: 14, total checks: 30, percentage repeated: 46.666667
+key: 0x7ffe504c08b0, clean_rechecks: 2
+key: 0x7ffe504c08b8, clean_rechecks: 0
+key: 0x7ffe504c08b1, clean_rechecks: 1
+key: 0x7ffe504c08bc, clean_rechecks: 0
+key: 0x7ffe504c08b2, clean_rechecks: 0
+key: 0x7ffe504c08c0, clean_rechecks: 0
+key: 0x7ffe504c08b3, clean_rechecks: 0
+clean_rechecks: 3, total checks: 10, percentage repeated: 30.000000
