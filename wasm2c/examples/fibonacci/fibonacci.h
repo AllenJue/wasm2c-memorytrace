@@ -71,6 +71,25 @@ StackNode *wasm2c_fibonacci_pop_stack(Stack *);
 void wasm2c_fibonacci_free_stack_node(StackNode *);
 void wasm2c_fibonacci_destroy_stack(Stack *);
 void wasm2c_fibonacci_print_stack(Stack *);
+typedef struct FuncDepthKey{
+  char *funcname;
+  u32 depth;
+} FuncDepthKey;
+
+typedef struct ParamNode {
+  u32 value; 
+  struct ParamNode *next;
+} ParamNode;
+
+typedef struct FuncParamMap {
+  FuncDepthKey key; 
+  ParamNode *params; 
+  UT_hash_handle hh; 
+} FuncParamMap; 
+
+extern FuncParamMap *param_map;
+void add_parameter(const char*, u32, u32);
+void free_param_map(FuncParamMap* map);
 wasm_rt_memory_t* wasm2c_fibonacci(w2c_fibonacci* instance);
 void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*, u64, const char *);
 typedef struct MemoryInfo{

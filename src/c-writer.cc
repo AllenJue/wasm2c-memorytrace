@@ -404,10 +404,14 @@ class CWriter {
   void WriteCallGraphDecls();
   void WriteCallGraphFuncsDecls();
   void WriteCallGraphFuncs();
-  // create call stack decleations
+  // create call stack declerations
   void WriteCallStackDecls();
   void WriteCallStackFuncsDecls();
   void WriteCallStackFuncs();
+  // create param map implementations
+  void WriteParamMapDecls();
+  void WriteParamMapFuncsDecls();
+  void WriteParamMapFuncs();
   // create file declarations
   void WriteFileDecl();
   void WriteFileOpenDecls();
@@ -1594,6 +1598,76 @@ void CWriter::WriteCallStackFuncs() {
   Write(CloseBrace(), Newline());
   Write(Newline());
 }
+
+
+void CWriter::WriteParamMapDecls() {
+  if(!s_trace) {
+    return;
+  }
+  // composite key
+  Write("typedef struct FuncDepthKey", OpenBrace());
+  Write("char *funcname;", Newline());
+  Write("u32 depth;", Newline());
+  Write(CloseBrace(), " FuncDepthKey;", Newline());
+  Write(Newline());
+  
+  // parameter values
+  Write("typedef struct ParamNode ", OpenBrace());
+  Write("u32 value; ", Newline());
+  Write("struct ParamNode *next;", Newline());
+  Write(CloseBrace(), " ParamNode;", Newline());
+  Write(Newline());
+  
+  // map that takes composite key and stores the values of the params
+  Write("typedef struct FuncParamMap ", OpenBrace());
+  Write("FuncDepthKey key; ", Newline());
+  Write("ParamNode *params; ", Newline());
+  Write("UT_hash_handle hh; ", Newline());
+  Write(CloseBrace(), " FuncParamMap; ", Newline());
+  Write(Newline());
+
+  Write("extern FuncParamMap *param_map;", Newline());
+}
+
+void CWriter::WriteParamMapFuncsDecls() {
+  if(!s_trace) {
+    return;
+  }
+  Write("void add_parameter(const char*, u32, u32);", Newline());
+  Write("void free_param_map(FuncParamMap* map);", Newline());
+}
+
+void CWriter::WriteParamMapFuncs() {
+  if(!s_trace) {
+    return;
+  }
+
+  Write("void add_parameter(const char *funcname, u32 depth, u32 param) ", OpenBrace());
+  Write("FuncDepthKey temp;", Newline());
+  Write("temp.funcname = funcname;", Newline());
+  Write("temp.depth = depth;", Newline());
+  Write("FuncParamMap *entry;", Newline());
+  Write("HASH_FIND(hh, param_map, &temp, sizeof(FuncDepthKey), entry);", Newline());
+  Write("if (!entry) ", OpenBrace());
+  Write("entry = (FuncParamMap*)malloc(sizeof(FuncParamMap));", Newline());
+  // Structures contain padding (wasted internal space used to fulfill alignment requirements for the members of the structure). These padding bytes must be zeroed before adding an item to the hash or looking up an item.
+  // set up the composite key
+  Write("entry->key.funcname = strdup(funcname);", Newline());
+  Write("entry->key.depth = depth;", Newline());
+  Write("entry->params = NULL;", Newline());
+  Write("HASH_ADD_KEYPTR(hh, param_map, &entry->key, sizeof(FuncDepthKey), entry);", Newline());
+  Write(CloseBrace(), Newline());
+  Write(Newline());
+
+  Write("ParamNode* new_param = (ParamNode*)malloc(sizeof(ParamNode));", Newline());
+  Write("new_param->value = param;", Newline());
+  Write("new_param->next = entry->params;", Newline());
+  Write("entry->params = new_param;", Newline());
+  Write(CloseBrace(), Newline());
+
+}
+
+
 
 void CWriter::WriteFileOpenDecls() {
   if(!s_trace) {
@@ -6355,6 +6429,9 @@ void CWriter::WriteCHeader() {
   // Global Call Stack Implementation
   WriteCallStackDecls();
   WriteCallStackFuncsDecls();
+  // Param stack implementation
+  WriteParamMapDecls();
+  WriteParamMapFuncsDecls();
   // Mem Instrumentation and Map
   WriteMemInstrumentationDecls();
   WriteMemoryInfoFuncsDecls();
@@ -6398,6 +6475,7 @@ void CWriter::WriteCSource() {
   WriteFileOpen();
   WriteCallGraphFuncs();
   WriteCallStackFuncs();
+  WriteParamMapFuncs();
   WriteMemInstrumentation();
   WriteMemoryInfoDecl();
   WriteMemoryInfoFuncs();

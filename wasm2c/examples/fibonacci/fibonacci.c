@@ -866,9 +866,49 @@ void wasm2c_fibonacci_print_stack(Stack *stack) {
   }
 }
 
+void add_parameter(const char *funcname, u32 depth, u32 param) {
+  FuncParamMap *entry;
+
+  // Search for an entry with matching funcname and depth
+  HASH_FIND(hh, param_map, funcname, strlen(funcname) + sizeof(u32), entry);
+  if (!entry) {
+    entry = (FuncParamMap*)malloc(sizeof(FuncParamMap));
+    memset(entry, 0, sizeof(FuncParamMap));
+    entry->key.funcname = strdup(funcname);
+    entry->key.depth = depth;
+    entry->params = NULL;
+    HASH_ADD_KEYPTR(hh, param_map, entry->key.funcname, strlen(funcname) + sizeof(u32), entry);
+  }
+
+  // Add the parameter to the list
+  ParamNode* new_param = (ParamNode*)malloc(sizeof(ParamNode));
+  new_param->value = param;
+  new_param->next = entry->params;
+  entry->params = new_param;
+
+  printf("Added %s at depth %u\n", entry->key.funcname, entry->key.depth);
+}
+
 void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*instance, u64 var, const char *caller){
-  void *ptr = (void*)((u64)w2c_fibonacci_memory(instance) + (u64)var);
+  void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);
   MemoryInfo *existing = wasm2c_fibonacci_map_find(ptr);
+  FuncParamMap *entry;
+
+  // Search by funcname and depth
+  HASH_FIND(hh, param_map, caller, strlen(caller) + sizeof(u32), entry);
+  if (!entry) {
+    printf("Entry not found for %s at depth %d\n", caller, WASM_RT_STACK_DEPTH_COUNT);
+  } else {
+    printf("Entry found for %s at depth %d\n", caller, WASM_RT_STACK_DEPTH_COUNT);
+    // Access parameters
+    ParamNode *param = entry->params;
+    while (param) {
+      if (param->value == (u32)var) {
+        printf("Pointer %p matches parameter %u\n", ptr, param->value);
+      }
+      param = param->next;
+    }
+  }
   total_checks++;
   if (existing) {
     // If the last verified is the current method or calls the current method
@@ -1014,6 +1054,7 @@ wasm_rt_func_type_t wasm2c_fibonacci_get_func_type(uint32_t param_count, uint32_
 u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
   u32 var_l1 = 0;
    // Parameters: var_p0, 
+  add_parameter(__func__, WASM_RT_STACK_DEPTH_COUNT, var_p0);
   FUNC_PROLOGUE;
   u32 var_i0, var_i1, var_i2;
   var_i0 = var_p0;

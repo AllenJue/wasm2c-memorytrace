@@ -16,6 +16,8 @@ wasm_rt_memory_t* w2c_host_mem(struct w2c_host* instance) {
 
 FunctionNode* graph = NULL;
 Stack *call_stack = NULL;
+FuncParamMap *param_map = NULL;
+
 
 int main(int argc, char** argv) {
   /* Make sure there is at least two command-line argument. */
