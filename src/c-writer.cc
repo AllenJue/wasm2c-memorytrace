@@ -1634,8 +1634,8 @@ void CWriter::WriteParamMapFuncs() {
   Write("size_t hash = FNV_OFFSET_BASIS;", Newline());
 
   // hash function name
-  Write("while (*funcname) ", OpenBrace());
-  Write("hash ^= (unsigned char)(*funcname++);", Newline());
+  Write("while (*caller) ", OpenBrace());
+  Write("hash ^= (unsigned char)(*caller++);", Newline());
   Write("hash *= FNV_PRIME;", Newline());
   Write(CloseBrace(), Newline());
        
@@ -1673,7 +1673,6 @@ void CWriter::WriteParamMapFuncs() {
   Write("size_t hash = create_hash(funcname, depth, param);", Newline());
   Write("HASH_FIND_INT(param_map, &hash, entry);", Newline());
   Write("if (!entry) ", OpenBrace());
-  Write("printf(\"No entry found for hash: %d\\n\", hash);", Newline());
   Write("return;", Newline());
   Write(CloseBrace(), Newline());
   
@@ -2608,12 +2607,6 @@ void CWriter::WriteMemoryInfoFuncsDecls() {
   if(!s_trace) {
     return;
   }
-  // create call stack node to help verify when a function is being called
-  // Write("typedef struct CallStackNode", OpenBrace());
-  // Write("char *function;", Newline());
-  // Write("struct CallStackNode *next;", Newline());
-  // Write(CloseBrace(), " CallStackNode;", Newline());
-  // Write(Newline());
   // Write the MemoryInfo Struct
   Write("typedef struct MemoryInfo", OpenBrace());
   Write("void *key;", Newline());
@@ -3544,8 +3537,6 @@ void CWriter::Write(const Func& func) {
     Write("StackNode *temp = ", kAdminSymbolPrefix, module_prefix_, "_pop_stack(call_stack);", Newline());
     Write("MemoryInfo *associated_info = ", kAdminSymbolPrefix, module_prefix_, "_map_find(temp->key);", Newline());
     Write("if (associated_info)", OpenBrace());
-    // Write("free(associated_info->last_verified);", Newline());
-    // Write("associated_info->last_verified = strdup(temp->prev_caller);", Newline());
     Write("associated_info->last_verified = temp->prev_caller;", Newline());
 
     Write(CloseBrace(), Newline());
@@ -5593,31 +5584,25 @@ void CWriter::WriteMemInstrumentation() {
     ModuleInstanceTypeName(), "*instance, u64 offset, const char *caller)", OpenBrace());
   Write("void *ptr = (void*)((u64)", kGlobalSymbolPrefix, module_prefix_, "_memory(instance) + (u64)offset);", Newline());
   Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_, "_map_find(ptr);", Newline());
-
+  Write("total_checks++;", Newline());
   Write("FuncParamMap *entry = NULL;", Newline());
   Write("bool entry_match = false;", Newline());
   Write("size_t hash = create_hash(caller, WASM_RT_STACK_DEPTH_COUNT, offset);", Newline());
   Write("HASH_FIND_INT(param_map, &hash, entry);", Newline());
-  // Write("char combined_key[256];", Newline());
-  // Write("snprintf(combined_key, sizeof(combined_key), \"%s_%u\", caller, WASM_RT_STACK_DEPTH_COUNT);", Newline());
-  // Write("HASH_FIND_STR(param_map, combined_key, entry);", Newline());
-
   // Find the entry in the parameter map
   Write("if (!entry) ", OpenBrace());
-  Write("printf(\"Entry not found for %s at depth %d\\n\", caller, WASM_RT_STACK_DEPTH_COUNT);", Newline());
+  // Write("printf(\"Entry not found for %s at depth %d\\n\", caller, WASM_RT_STACK_DEPTH_COUNT);", Newline());
   Write("return;", Newline());
   Write(CloseBrace(), " else ", OpenBrace());
-  Write("printf(\"Entry found for %s at depth %d\\n\", caller, WASM_RT_STACK_DEPTH_COUNT);", Newline());
+  // Write("printf(\"Entry found for %s at depth %d\\n\", caller, WASM_RT_STACK_DEPTH_COUNT);", Newline());
   Write("u32 param = entry->param;", Newline());
-  Write("printf(\"param->value: %d and offset: %d\\n\", param, offset);", Newline());
+  // Write("printf(\"param->value: %d and offset: %d\\n\", param, offset);", Newline());
   Write("if (param == (u32) offset) ", OpenBrace());
   Write("entry_match = true;", Newline());
-  Write("break;", Newline());
   Write(CloseBrace(), Newline());
   Write(CloseBrace(), Newline());
   
   // Write("printf(\"Call depth: %ld\\n\", wasm_rt_call_stack_depth);", Newline());
-  Write("total_checks++;", Newline());
 
   // If the memory is already tracked
   Write("if (existing ) ", OpenBrace());
