@@ -83,13 +83,16 @@ typedef struct ParamNode {
 
 typedef struct FuncParamMap {
   FuncDepthKey key; 
+  size_t hash; 
   ParamNode *params; 
   UT_hash_handle hh; 
 } FuncParamMap; 
 
 extern FuncParamMap *param_map;
 void add_parameter(const char*, u32, u32);
+void remove_parameter(const char *, u32, u32);
 void free_param_map(FuncParamMap* map);
+size_t create_hash(const char *, u32);
 wasm_rt_memory_t* wasm2c_fibonacci(w2c_fibonacci* instance);
 void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*, u64, const char *);
 typedef struct MemoryInfo{

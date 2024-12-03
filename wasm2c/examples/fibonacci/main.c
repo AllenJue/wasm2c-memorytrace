@@ -84,6 +84,7 @@ int main(int argc, char** argv) {
   wasm2c_fibonacci_free_info_map();
   wasm2c_fibonacci_free(&fibonnaci);
   wasm2c_fibonacci_file_close();
+  // free_param_map(param_map);
   // wasm_rt_free();
   clock_t end = clock();
   double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;

@@ -1604,24 +1604,10 @@ void CWriter::WriteParamMapDecls() {
   if(!s_trace) {
     return;
   }
-  // composite key
-  Write("typedef struct FuncDepthKey", OpenBrace());
-  Write("char *funcname;", Newline());
-  Write("u32 depth;", Newline());
-  Write(CloseBrace(), " FuncDepthKey;", Newline());
-  Write(Newline());
-  
-  // parameter values
-  Write("typedef struct ParamNode ", OpenBrace());
-  Write("u32 value; ", Newline());
-  Write("struct ParamNode *next;", Newline());
-  Write(CloseBrace(), " ParamNode;", Newline());
-  Write(Newline());
-  
   // map that takes composite key and stores the values of the params
   Write("typedef struct FuncParamMap ", OpenBrace());
-  Write("FuncDepthKey key; ", Newline());
-  Write("ParamNode *params; ", Newline());
+  Write("size_t hash; ", Newline());
+  Write("size_t param; ", Newline());
   Write("UT_hash_handle hh; ", Newline());
   Write(CloseBrace(), " FuncParamMap; ", Newline());
   Write(Newline());
@@ -1634,37 +1620,66 @@ void CWriter::WriteParamMapFuncsDecls() {
     return;
   }
   Write("void add_parameter(const char*, u32, u32);", Newline());
+  Write("void remove_parameter(const char *, u32, u32);", Newline());
   Write("void free_param_map(FuncParamMap* map);", Newline());
+  Write("size_t create_hash(const char *, u32, u32);", Newline());
 }
 
 void CWriter::WriteParamMapFuncs() {
   if(!s_trace) {
     return;
   }
+  // fnv-1a hashing function that is simple and takes in string data
+  Write("size_t create_hash(const char *caller, u32 depth, u32 param) ", OpenBrace());
+  Write("size_t hash = FNV_OFFSET_BASIS;", Newline());
+
+  // hash function name
+  Write("while (*funcname) ", OpenBrace());
+  Write("hash ^= (unsigned char)(*funcname++);", Newline());
+  Write("hash *= FNV_PRIME;", Newline());
+  Write(CloseBrace(), Newline());
+       
+  Write("hash ^= (depth & 0xFFFFFFFF);", Newline());
+  Write("hash *= FNV_PRIME;", Newline());
+   
+  Write("hash ^= (param & 0xFFFFFFFF);", Newline());
+  Write("hash *= FNV_PRIME;", Newline());
+  
+  Write("return hash;", Newline());
+  Write(CloseBrace(), Newline());
 
   Write("void add_parameter(const char *funcname, u32 depth, u32 param) ", OpenBrace());
-  Write("FuncDepthKey temp;", Newline());
-  Write("temp.funcname = funcname;", Newline());
-  Write("temp.depth = depth;", Newline());
-  Write("FuncParamMap *entry;", Newline());
-  Write("HASH_FIND(hh, param_map, &temp, sizeof(FuncDepthKey), entry);", Newline());
+  Write("FuncParamMap *entry = NULL;", Newline());
+  Write("size_t hash = create_hash(funcname, depth, param);", Newline());
+  Write("HASH_FIND_INT(param_map, &hash, entry);", Newline());
   Write("if (!entry) ", OpenBrace());
   Write("entry = (FuncParamMap*)malloc(sizeof(FuncParamMap));", Newline());
   // Structures contain padding (wasted internal space used to fulfill alignment requirements for the members of the structure). These padding bytes must be zeroed before adding an item to the hash or looking up an item.
-  // set up the composite key
-  Write("entry->key.funcname = strdup(funcname);", Newline());
-  Write("entry->key.depth = depth;", Newline());
-  Write("entry->params = NULL;", Newline());
-  Write("HASH_ADD_KEYPTR(hh, param_map, &entry->key, sizeof(FuncDepthKey), entry);", Newline());
+  Write("memset(entry, 0, sizeof(FuncParamMap));", Newline());
+  Write("entry->hash = hash;", Newline());
+  Write("entry->param = NULL;", Newline());
+  
+  // insert current entry based on hash param
+  Write("HASH_ADD_INT(param_map, hash, entry);", Newline());
   Write(CloseBrace(), Newline());
   Write(Newline());
 
-  Write("ParamNode* new_param = (ParamNode*)malloc(sizeof(ParamNode));", Newline());
-  Write("new_param->value = param;", Newline());
-  Write("new_param->next = entry->params;", Newline());
-  Write("entry->params = new_param;", Newline());
+  Write("entry->param = param;", Newline());
   Write(CloseBrace(), Newline());
 
+  // function to free memory of a parameter, do so when a function returns
+  Write("void remove_parameter(const char *funcname, u32 depth, u32 param) ", OpenBrace());
+  Write("FuncParamMap *entry = NULL;", Newline());
+  Write("size_t hash = create_hash(funcname, depth, param);", Newline());
+  Write("HASH_FIND_INT(param_map, &hash, entry);", Newline());
+  Write("if (!entry) ", OpenBrace());
+  Write("printf(\"No entry found for hash: %d\\n\", hash);", Newline());
+  Write("return;", Newline());
+  Write(CloseBrace(), Newline());
+  
+  Write("HASH_DEL(param_map, entry);", Newline());
+  Write("free(entry);", Newline());
+  Write(CloseBrace(), Newline());
 }
 
 
@@ -3497,7 +3512,7 @@ void CWriter::Write(const Func& func) {
   WriteParamsAndLocals();
   WriteParamComments();
   Write("FUNC_PROLOGUE;", Newline());
-
+  
   PushFuncSection();
   std::string label = DefineLabelName(kImplicitFuncLabel);
   ResetTypeStack(0);
@@ -3507,6 +3522,21 @@ void CWriter::Write(const Func& func) {
   PopLabel();
   ResetTypeStack(0);
   PushTypes(func.decl.sig.result_types);
+  if(s_trace) {
+    std::vector<std::string> param_names;
+    MakeTypeBindingReverseMapping(func_->GetNumParamsAndLocals(), func_->bindings, &param_names);
+    for (size_t i = 0; i < func_->GetNumParams(); ++i) {
+      std::string base_name = param_names[i];
+      std::string param_name;
+      if (!base_name.empty() && base_name[0] == '$') {
+        param_name = "var_" + base_name.substr(1);  // Remove $ and prepend "var_"
+      } else {
+        param_name = base_name; 
+      }
+      Write("remove_parameter", "(__func__, WASM_RT_STACK_DEPTH_COUNT, ", param_name, ");", Newline());
+    }
+    Write(Newline());
+  }
   Write("FUNC_EPILOGUE;", Newline());
   if(s_trace) {
     // Write("printf(\"Function returning: %s\\n\", __func__);", Newline());
@@ -3642,6 +3672,17 @@ void CWriter::WriteParamComments() {
       param_name = base_name; 
     }
     Write(param_name, ", ");
+  }
+  Write(Newline());
+  for (size_t i = 0; i < func_->GetNumParams(); ++i) {
+    std::string base_name = param_names[i];
+    std::string param_name;
+    if (!base_name.empty() && base_name[0] == '$') {
+      param_name = "var_" + base_name.substr(1);  // Remove $ and prepend "var_"
+    } else {
+      param_name = base_name; 
+    }
+    Write("add_parameter", "(__func__, WASM_RT_STACK_DEPTH_COUNT, ", param_name, ");", Newline());
   }
   Write(Newline());
 }
@@ -5549,18 +5590,43 @@ void CWriter::WriteMemInstrumentation() {
     return;
   }
   Write("void ", kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(", 
-    ModuleInstanceTypeName(), "*instance, u64 var, const char *caller)", OpenBrace());
-  Write("void *ptr = (void*)((u64)", kGlobalSymbolPrefix, module_prefix_, "_memory(instance) + (u64)var);", Newline());
+    ModuleInstanceTypeName(), "*instance, u64 offset, const char *caller)", OpenBrace());
+  Write("void *ptr = (void*)((u64)", kGlobalSymbolPrefix, module_prefix_, "_memory(instance) + (u64)offset);", Newline());
   Write("MemoryInfo *existing = ", kAdminSymbolPrefix, module_prefix_, "_map_find(ptr);", Newline());
+
+  Write("FuncParamMap *entry = NULL;", Newline());
+  Write("bool entry_match = false;", Newline());
+  Write("size_t hash = create_hash(caller, WASM_RT_STACK_DEPTH_COUNT, offset);", Newline());
+  Write("HASH_FIND_INT(param_map, &hash, entry);", Newline());
+  // Write("char combined_key[256];", Newline());
+  // Write("snprintf(combined_key, sizeof(combined_key), \"%s_%u\", caller, WASM_RT_STACK_DEPTH_COUNT);", Newline());
+  // Write("HASH_FIND_STR(param_map, combined_key, entry);", Newline());
+
+  // Find the entry in the parameter map
+  Write("if (!entry) ", OpenBrace());
+  Write("printf(\"Entry not found for %s at depth %d\\n\", caller, WASM_RT_STACK_DEPTH_COUNT);", Newline());
+  Write("return;", Newline());
+  Write(CloseBrace(), " else ", OpenBrace());
+  Write("printf(\"Entry found for %s at depth %d\\n\", caller, WASM_RT_STACK_DEPTH_COUNT);", Newline());
+  Write("u32 param = entry->param;", Newline());
+  Write("printf(\"param->value: %d and offset: %d\\n\", param, offset);", Newline());
+  Write("if (param == (u32) offset) ", OpenBrace());
+  Write("entry_match = true;", Newline());
+  Write("break;", Newline());
+  Write(CloseBrace(), Newline());
+  Write(CloseBrace(), Newline());
+  
   // Write("printf(\"Call depth: %ld\\n\", wasm_rt_call_stack_depth);", Newline());
   Write("total_checks++;", Newline());
 
   // If the memory is already tracked
-  Write("if (existing) ", OpenBrace());
+  Write("if (existing ) ", OpenBrace());
   // Write("printf(\"Caller: %s, Callee: %s\\n\", caller, __func__);", Newline());
   // kAdminSymbolPrefix, module_prefix_, "_contains_edge
   Write("// If the last verified is the current method or calls the current method", Newline());
-  Write("if (existing->last_verified && strcmp(existing->last_verified, caller) == 0 || ", kAdminSymbolPrefix, module_prefix_, "_contains_edge(existing->last_verified, caller)) " , OpenBrace());
+  Write("if (entry_match && existing->last_verified && (strcmp(existing->last_verified, caller) == 0 || ", kAdminSymbolPrefix, module_prefix_, "_contains_edge(existing->last_verified, caller))) " , OpenBrace());
+  // old version no parameter matching
+  // Write("if (existing->last_verified && strcmp(existing->last_verified, caller) == 0 || ", kAdminSymbolPrefix, module_prefix_, "_contains_edge(existing->last_verified, caller)) " , OpenBrace());
   Write("existing->clean_rechecks++;", Newline());
   Write("return;", Newline());
   Write(CloseBrace(), Newline());
@@ -5622,6 +5688,13 @@ void CWriter::Write(const LoadExpr& expr) {
   func = GetMemoryAPIString(*memory, func);
 
   Type result_type = expr.opcode.GetResultType();
+  if (s_trace) {
+    Write(kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(instance, ", StackVar(0));
+    if (expr.offset != 0)
+      Write(" + ", expr.offset, "u");
+    Write(", __func__);", Newline());
+  }
+
   Write(StackVar(0, result_type), " = ", func, "(",
         ExternalInstancePtr(ModuleFieldType::Memory, memory->name), ", (u64)(",
         StackVar(0), ")");
@@ -5629,12 +5702,7 @@ void CWriter::Write(const LoadExpr& expr) {
     Write(" + ", expr.offset, "u");
   Write(");", Newline());
 
-  if (s_trace) {
-    Write(kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(instance, ", StackVar(0));
-    if (expr.offset != 0)
-      Write(" + ", expr.offset, "u");
-    Write(", __func__);", Newline());
-  }
+
 
   DropTypes(1);
   PushType(result_type);
@@ -5664,19 +5732,19 @@ void CWriter::Write(const StoreExpr& expr) {
   Memory* memory = module_->memories[module_->GetMemoryIndex(expr.memidx)];
   func = GetMemoryAPIString(*memory, func);
 
+  if (s_trace) {
+    Write(kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(instance, ", StackVar(1));
+    if (expr.offset != 0)
+      Write(" + ", expr.offset);
+    Write(", __func__);", Newline());
+  }
+
   Write(func, "(", ExternalInstancePtr(ModuleFieldType::Memory, memory->name),
         ", (u64)(", StackVar(1), ")");
   if (expr.offset != 0)
     Write(" + ", expr.offset);
   Write(", ", StackVar(0), ");", Newline());
 
-
-  if (s_trace) {
-    Write(kAdminSymbolPrefix, module_prefix_, "_mem_instrumentation(instance, ", StackVar(1));
-  if (expr.offset != 0)
-    Write(" + ", expr.offset);
-  Write(", __func__);", Newline());
-  }
   DropTypes(2);
 }
 
@@ -6411,6 +6479,11 @@ void CWriter::WriteCHeader() {
   Write("/* Automatically generated by wasm2c */", Newline());
   Write("#ifndef ", guard, Newline());
   Write("#define ", guard, Newline());
+  // for FNV hashing
+  if(s_trace) {
+    Write("#define FNV_OFFSET_BASIS 0x811C9DC5", Newline());
+    Write("#define FNV_PRIME 0x01000193", Newline());
+  }
   Write(Newline());
   ComputeSimdScope();
   WriteHeaderIncludes();

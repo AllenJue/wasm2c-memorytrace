@@ -215,6 +215,8 @@ void w2c_wasi__snapshot__preview1_proc_exit(
 
 FunctionNode* graph = NULL;
 Stack *call_stack = NULL;
+FuncParamMap *param_map = NULL;
+
 
 int main(int argc, char const* argv[]) {
   w2c_dhrystone dhrystone;

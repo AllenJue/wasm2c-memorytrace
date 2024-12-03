@@ -866,53 +866,86 @@ void wasm2c_fibonacci_print_stack(Stack *stack) {
   }
 }
 
+size_t create_hash(const char *caller, u32 depth) {
+  if (caller == NULL){
+    return 0;
+  }
+  size_t hash = 42;
+  while (*caller) {
+    hash = ((hash << 5) + hash) + (unsigned char)(*caller++);
+  }
+  hash = ((hash << 5) + hash) + depth;
+  return hash;
+}
 void add_parameter(const char *funcname, u32 depth, u32 param) {
-  FuncParamMap *entry;
-
-  // Search for an entry with matching funcname and depth
-  HASH_FIND(hh, param_map, funcname, strlen(funcname) + sizeof(u32), entry);
+  FuncParamMap *entry = NULL;
+  size_t hash = create_hash(funcname, depth);
+  HASH_FIND_INT(param_map, &hash, entry);
   if (!entry) {
     entry = (FuncParamMap*)malloc(sizeof(FuncParamMap));
     memset(entry, 0, sizeof(FuncParamMap));
     entry->key.funcname = strdup(funcname);
     entry->key.depth = depth;
+    entry->hash = hash;
     entry->params = NULL;
-    HASH_ADD_KEYPTR(hh, param_map, entry->key.funcname, strlen(funcname) + sizeof(u32), entry);
+    HASH_ADD_INT(param_map, hash, entry);
   }
-
-  // Add the parameter to the list
+  
   ParamNode* new_param = (ParamNode*)malloc(sizeof(ParamNode));
   new_param->value = param;
   new_param->next = entry->params;
   entry->params = new_param;
-
-  printf("Added %s at depth %u\n", entry->key.funcname, entry->key.depth);
 }
-
-void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*instance, u64 var, const char *caller){
-  void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)var);
+void remove_parameter(const char *funcname, u32 depth, u32 param) {
+  FuncParamMap *entry = NULL;
+  size_t hash = create_hash(funcname, depth);
+  HASH_FIND_INT(param_map, &hash, entry);
+  if (!entry) {
+    printf("No entry found for hash: %d\n", hash);
+    return;
+  }
+  ParamNode *current = entry->params;
+  ParamNode *prev = NULL;
+  while (current) {
+    if (current->value == param) {
+      if (prev) {
+        prev->next = current->next;
+      } else {
+        entry->params = current->next;
+      }
+      free(current);
+      return;
+    }
+    prev = current;
+    current = current->next;
+  }
+}
+void wasm2c_fibonacci_mem_instrumentation(w2c_fibonacci*instance, u64 offset, const char *caller){
+  void *ptr = (void*)((u64)instance->w2c_host_mem + (u64)offset);
   MemoryInfo *existing = wasm2c_fibonacci_map_find(ptr);
-  FuncParamMap *entry;
-
-  // Search by funcname and depth
-  HASH_FIND(hh, param_map, caller, strlen(caller) + sizeof(u32), entry);
+  FuncParamMap *entry = NULL;
+  bool entry_match = false;
+  size_t hash = create_hash(caller, WASM_RT_STACK_DEPTH_COUNT);
+  HASH_FIND_INT(param_map, &hash, entry);
   if (!entry) {
     printf("Entry not found for %s at depth %d\n", caller, WASM_RT_STACK_DEPTH_COUNT);
+    return;
   } else {
     printf("Entry found for %s at depth %d\n", caller, WASM_RT_STACK_DEPTH_COUNT);
-    // Access parameters
     ParamNode *param = entry->params;
     while (param) {
-      if (param->value == (u32)var) {
-        printf("Pointer %p matches parameter %u\n", ptr, param->value);
+      printf("param->value: %d and offset: %d\n", param->value, offset);
+      if (param->value * 4u == (u32) offset){
+        entry_match = true;
+        break;
       }
       param = param->next;
     }
   }
   total_checks++;
-  if (existing) {
+  if (existing ) {
     // If the last verified is the current method or calls the current method
-    if (existing->last_verified && strcmp(existing->last_verified, caller) == 0 || wasm2c_fibonacci_contains_edge(existing->last_verified, caller)) {
+    if (entry_match && existing->last_verified && (strcmp(existing->last_verified, caller) == 0 || wasm2c_fibonacci_contains_edge(existing->last_verified, caller))) {
       existing->clean_rechecks++;
       return;
     }
@@ -1055,6 +1088,7 @@ u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
   u32 var_l1 = 0;
    // Parameters: var_p0, 
   add_parameter(__func__, WASM_RT_STACK_DEPTH_COUNT, var_p0);
+  
   FUNC_PROLOGUE;
   u32 var_i0, var_i1, var_i2;
   var_i0 = var_p0;
@@ -1074,8 +1108,8 @@ u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
   var_i0 = var_p0;
   var_i1 = 4u;
   var_i0 *= var_i1;
-  var_i0 = i32_load(instance->w2c_host_mem, (u64)(var_i0));
   wasm2c_fibonacci_mem_instrumentation(instance, var_i0, __func__);
+  var_i0 = i32_load(instance->w2c_host_mem, (u64)(var_i0));
   var_l1 = var_i0;
   var_i0 = var_l1;
   var_i1 = 0u;
@@ -1098,11 +1132,13 @@ u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
   var_i1 = 4u;
   var_i0 *= var_i1;
   var_i1 = var_l1;
-  i32_store(instance->w2c_host_mem, (u64)(var_i0), var_i1);
   wasm2c_fibonacci_mem_instrumentation(instance, var_i0, __func__);
+  i32_store(instance->w2c_host_mem, (u64)(var_i0), var_i1);
   var_i0 = var_l1;
   goto var_Bfunc;
   var_Bfunc:;
+  remove_parameter(__func__, WASM_RT_STACK_DEPTH_COUNT, var_p0);
+  
   FUNC_EPILOGUE;
   while (call_stack->top && strcmp(call_stack->top->caller, __func__) == 0){
     StackNode *temp = wasm2c_fibonacci_pop_stack(call_stack);
@@ -1118,6 +1154,8 @@ u32 w2c_fibonacci_f2(w2c_fibonacci* instance, u32 var_p0) {
 void w2c_fibonacci_fibonacci_loop_0(w2c_fibonacci* instance, u32 var_p0) {
   u32 var_l1 = 0, var_l2 = 0;
    // Parameters: var_p0, 
+  add_parameter(__func__, WASM_RT_STACK_DEPTH_COUNT, var_p0);
+  
   FUNC_PROLOGUE;
   u32 var_i0, var_i1, var_i2, var_i3;
   var_i0 = 0u;
@@ -1155,6 +1193,8 @@ void w2c_fibonacci_fibonacci_loop_0(w2c_fibonacci* instance, u32 var_p0) {
   var_i1 = var_l2;
   goto var_Bfunc;
   var_Bfunc:;
+  remove_parameter(__func__, WASM_RT_STACK_DEPTH_COUNT, var_p0);
+  
   FUNC_EPILOGUE;
   while (call_stack->top && strcmp(call_stack->top->caller, __func__) == 0){
     StackNode *temp = wasm2c_fibonacci_pop_stack(call_stack);
